@@ -20,7 +20,7 @@ export default function ProposalList({ user, onNew, onLoad, corPrimaria = "#1976
     setLoading(true);
     const { data, error } = await supabase
       .from("propostas")
-      .select("id, cliente_nome, proposta_numero, created_at, data_proposta")
+      .select("id, cliente_nome, proposta_numero, created_at, data_proposta, status")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (!error) setProposals(data || []);
@@ -34,6 +34,28 @@ export default function ProposalList({ user, onNew, onLoad, corPrimaria = "#1976
       .eq("id", id)
       .single();
     if (!error && data) onLoad(data.dados);
+  };
+
+  const handleDuplicate = async (id) => {
+    const { data, error } = await supabase
+      .from("propostas")
+      .select("dados")
+      .eq("id", id)
+      .single();
+    if (!error && data) {
+      const newData = { ...data.dados, propostaNumero: "" };
+      onLoad(newData);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      "Rascunho": { bg: "#f5f5f5", text: "#666", emoji: "📝" },
+      "Enviada": { bg: "#e3f2fd", text: "#1976d2", emoji: "📤" },
+      "Aceita": { bg: "#e8f5e9", text: "#388e3c", emoji: "✅" },
+      "Recusada": { bg: "#ffebee", text: "#c62828", emoji: "❌" }
+    };
+    return colors[status] || colors["Rascunho"];
   };
 
   const handleDelete = async (id) => {
@@ -106,17 +128,27 @@ export default function ProposalList({ user, onNew, onLoad, corPrimaria = "#1976
                 <div style={{ fontWeight: 700, fontSize: 15, color: "#1a1a1a", marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {p.cliente_nome || "Cliente não informado"}
                 </div>
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                   {p.proposta_numero && (
                     <span style={{ fontSize: 12, color: "#888" }}>Nº {p.proposta_numero}</span>
                   )}
                   <span style={{ fontSize: 12, color: "#aaa" }}>Salva em {formatDate(p.created_at)}</span>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+                {p.status && (
+                  <div style={{ ...getStatusColor(p.status), padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+                    {getStatusColor(p.status).emoji} {p.status}
+                  </div>
+                )}
                 <button onClick={() => handleLoad(p.id)}
                   style={{ background: corPrimaria, color: "white", border: "none", padding: "8px 16px", borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                   Abrir
+                </button>
+                <button onClick={() => handleDuplicate(p.id)}
+                  style={{ background: "#f0f0f0", color: "#666", border: "1px solid #ddd", padding: "8px 12px", borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: "pointer" }}
+                  title="Duplicar proposta">
+                  📋
                 </button>
                 <button onClick={() => setConfirmDelete(p.id)}
                   style={{ background: "#fff0f0", color: "#c00", border: "1px solid #fcc", padding: "8px 12px", borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>

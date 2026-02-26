@@ -15,6 +15,7 @@ const defaultData = {
   propostaNumero: "",
   propostaValidade: "5 dias a contar desta data",
   propostaData: new Date().toISOString().split("T")[0],
+  status: "Rascunho",
   clienteNome: "",
   clienteCNPJ: "",
   introTexto: "Sabemos que suas vagas não são para qualquer um — cada posição fortalece sua equipe, aumenta a produtividade e consolida sua cultura.\n\nO desafio é encontrar esses profissionais sem desperdiçar tempo, dinheiro e recursos internos.\n\nA RGA Recursos Humanos resolve isso para você.\n\nNão apenas preenchemos vagas — garantimos contratações de qualidade que transformam sua empresa.",
@@ -63,9 +64,17 @@ function FieldGroup({ label, children }) {
     </div>
   );
 }
-function FInput({ value, onChange, placeholder, type = "text" }) {
+function FInput({ value, onChange, placeholder, type = "text", mask }) {
+  const handleChange = (e) => {
+    let val = e.target.value;
+    if (mask === "cnpj") {
+      val = val.replace(/\D/g, "").slice(0, 14);
+      val = val.replace(/(\d{2})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1/$2").replace(/(\d{4})(\d)/, "$1-$2");
+    }
+    onChange({ ...e, target: { ...e.target, value: val } });
+  };
   return (
-    <input type={type} value={value} onChange={onChange} placeholder={placeholder}
+    <input type={type} value={value} onChange={handleChange} placeholder={placeholder}
       style={{ width: "100%", border: "1px solid #ddd", borderRadius: 6, padding: "10px 12px", fontSize: 14, fontFamily: "inherit", outline: "none", color: "#333", WebkitAppearance: "none", boxSizing: "border-box" }} />
   );
 }
@@ -215,7 +224,9 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [savedId, setSavedId] = useState(null);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const logoRef = useRef();
+  const autoSaveTimerRef = useRef(null);
   const isMobile = useIsMobile();
 
   // Check auth on load
@@ -227,12 +238,28 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user || null);
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
   }, []);
 
-  const set = (key, val) => setData(d => ({ ...d, [key]: val }));
+  const set = (key, val) => {
+    setData(d => ({ ...d, [key]: val }));
+    if (autoSaveEnabled && savedId) {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = setTimeout(() => {
+        handleSave();
+      }, 3000);
+    }
+  };
 
-  const handleSave = async () => {
+  const handleSaveManual = async () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    await handleSave();
+  };
+
+  const handleSave = async (isAutoSave = false) => {
     setSaving(true);
     setSaveMsg("");
     const payload = {
@@ -240,6 +267,7 @@ export default function App() {
       cliente_nome: data.clienteNome,
       proposta_numero: data.propostaNumero,
       data_proposta: data.propostaData || null,
+      status: data.status || "Rascunho",
       dados: data,
     };
     let result;
@@ -398,10 +426,21 @@ export default function App() {
               </button>
             </div>
           </FieldGroup>
-          {[["clienteNome","Nome do Cliente / Empresa"],["clienteCNPJ","CNPJ do Cliente"],["propostaValidade","Validade da Proposta"]].map(([k,l]) => (
+          {[["clienteNome","Nome do Cliente / Empresa"],["propostaValidade","Validade da Proposta"]].map(([k,l]) => (
             <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} /></FieldGroup>
           ))}
-          <FieldGroup label="Data"><FInput type="date" value={data.propostaData} onChange={e => set("propostaData", e.target.value)} /></FieldGroup>
+          <FieldGroup label="CNPJ do Cliente"><FInput value={data.clienteCNPJ} onChange={e => set("clienteCNPJ", e.target.value)} mask="cnpj" placeholder="00.000.000/0001-00" /></FieldGroup>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <FieldGroup label="Data"><FInput type="date" value={data.propostaData} onChange={e => set("propostaData", e.target.value)} /></FieldGroup>
+            <FieldGroup label="Status">
+              <select value={data.status} onChange={e => set("status", e.target.value)} style={{ width: "100%", border: "1px solid #ddd", borderRadius: 6, padding: "10px 12px", fontSize: 14, fontFamily: "inherit", outline: "none", color: "#333", boxSizing: "border-box" }}>
+                <option value="Rascunho">Rascunho</option>
+                <option value="Enviada">Enviada</option>
+                <option value="Aceita">Aceita</option>
+                <option value="Recusada">Recusada</option>
+              </select>
+            </FieldGroup>
+          </div>
           <FieldGroup label="Texto de Abertura"><FTextarea rows={7} value={data.introTexto} onChange={e => set("introTexto", e.target.value)} /></FieldGroup>
           <FieldGroup label="Próximos Passos"><FTextarea rows={5} value={data.proximosPassos} onChange={e => set("proximosPassos", e.target.value)} /></FieldGroup>
         </div>}
@@ -476,7 +515,7 @@ export default function App() {
         </div>
         <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
           {saveMsg && <span style={{ fontSize: 12, color: saveMsg.startsWith("✅") ? "#aeffae" : "#ffaeae", fontWeight: 600 }}>{saveMsg}</span>}
-          <button onClick={handleSave} disabled={saving}
+          <button onClick={handleSaveManual} disabled={saving}
             style={{ background: saving ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.4)", padding: "7px 14px", borderRadius: 6, cursor: saving ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 700 }}>
             {saving ? "⏳" : "💾"}{!isMobile && (saving ? " Salvando..." : " Salvar")}
           </button>
