@@ -258,8 +258,30 @@ export default function App() {
     }
   };
 
-  const handleNew = () => {
-    setData({ ...defaultData });
+  const generateProposalNumber = async () => {
+    const currentYear = new Date().getFullYear();
+    const { data, error } = await supabase
+      .from("propostas")
+      .select("proposta_numero")
+      .eq("user_id", user.id)
+      .like("proposta_numero", `%/${currentYear}`)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    
+    let nextNumber = 1;
+    if (!error && data && data.length > 0) {
+      const lastNumber = data[0].proposta_numero;
+      const match = lastNumber.match(/(\d+)\/(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1]) + 1;
+      }
+    }
+    return `${nextNumber}/${currentYear}`;
+  };
+
+  const handleNew = async () => {
+    const newProposalNumber = await generateProposalNumber();
+    setData({ ...defaultData, propostaNumero: newProposalNumber });
     setSavedId(null);
     setSaveMsg("");
     setScreen("editor");
@@ -365,7 +387,18 @@ export default function App() {
 
         {tab === "cliente" && <div>
           <div style={{ fontWeight: 700, fontSize: 14, color: data.corPrimaria, marginBottom: 16 }}>Dados do Cliente</div>
-          {[["propostaNumero","Nº da Proposta"],["clienteNome","Nome do Cliente / Empresa"],["clienteCNPJ","CNPJ do Cliente"],["propostaValidade","Validade da Proposta"]].map(([k,l]) => (
+          <FieldGroup label="Nº da Proposta" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flex: 1 }}>
+              <FInput value={data.propostaNumero} onChange={e => set("propostaNumero", e.target.value)} />
+              <button onClick={async () => {
+                const newNum = await generateProposalNumber();
+                set("propostaNumero", newNum);
+              }} style={{ background: data.corPrimaria, color: "white", border: "none", borderRadius: 6, padding: "10px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                🔄 Gerar
+              </button>
+            </div>
+          </FieldGroup>
+          {[["clienteNome","Nome do Cliente / Empresa"],["clienteCNPJ","CNPJ do Cliente"],["propostaValidade","Validade da Proposta"]].map(([k,l]) => (
             <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} /></FieldGroup>
           ))}
           <FieldGroup label="Data"><FInput type="date" value={data.propostaData} onChange={e => set("propostaData", e.target.value)} /></FieldGroup>
