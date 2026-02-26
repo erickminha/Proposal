@@ -23,7 +23,17 @@ export default function ProposalList({ user, onNew, onLoad, corPrimaria = "#1976
       .select("id, cliente_nome, proposta_numero, created_at, data_proposta, status")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
-    if (!error) setProposals(data || []);
+    // Se houver erro por coluna inexistente, tentar sem status
+    if (error && error.message && error.message.includes("status")) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("propostas")
+        .select("id, cliente_nome, proposta_numero, created_at, data_proposta")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (!fallbackError) setProposals(fallbackData || []);
+    } else if (!error) {
+      setProposals(data || []);
+    }
     setLoading(false);
   };
 
@@ -136,9 +146,13 @@ export default function ProposalList({ user, onNew, onLoad, corPrimaria = "#1976
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                {p.status && (
+                {p.status ? (
                   <div style={{ ...getStatusColor(p.status), padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
                     {getStatusColor(p.status).emoji} {p.status}
+                  </div>
+                ) : (
+                  <div style={{ background: "#f5f5f5", color: "#666", padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap" }}>
+                    📝 Rascunho
                   </div>
                 )}
                 <button onClick={() => handleLoad(p.id)}

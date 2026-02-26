@@ -267,9 +267,12 @@ export default function App() {
       cliente_nome: data.clienteNome,
       proposta_numero: data.propostaNumero,
       data_proposta: data.propostaData || null,
-      status: data.status || "Rascunho",
       dados: data,
     };
+    // Adicionar status apenas se a coluna existir no banco
+    if (data.status) {
+      payload.status = data.status;
+    }
     let result;
     if (savedId) {
       result = await supabase.from("propostas").update(payload).eq("id", savedId).select().single();
