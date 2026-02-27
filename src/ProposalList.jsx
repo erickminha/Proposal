@@ -19,11 +19,14 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
       setFilteredPropostas(propostas);
     } else {
       const term = searchTerm.toLowerCase().trim();
-      const filtered = propostas.filter(proposta => {
-        const clienteNome = proposta.dados?.clienteNome?.toLowerCase() || "";
-        const propostaNumero = proposta.proposta_numero?.toLowerCase() || "";
-        return clienteNome.includes(term) || propostaNumero.includes(term);
-      });
+     const filtered = propostas.filter(proposta => {
+  const clienteNome = proposta.dados?.clienteNome?.toLowerCase() || "";
+  const propostaNumero = proposta.proposta_numero?.toLowerCase() || "";
+  const cnpj = proposta.dados?.clienteCNPJ?.toLowerCase() || "";
+  return clienteNome.includes(term) || 
+         propostaNumero.includes(term) || 
+         cnpj.includes(term);
+});
       setFilteredPropostas(filtered);
     }
   }, [searchTerm, propostas]);
