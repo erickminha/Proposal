@@ -131,7 +131,7 @@ function FTextarea({ value, onChange, rows = 3 }) {
 function ProposalPage({ data, logoSrc, children }) {
   return (
     <div className="print-page" style={{
-      background: "white", width: "100%", maxWidth: 794, minHeight: 1123,
+      background: "white", width: "100%", maxWidth: 794, minHeight: 1123, height: 1123,
       boxShadow: "0 10px 25px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column",
       fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       fontSize: 13,
@@ -163,9 +163,9 @@ function ProposalPage({ data, logoSrc, children }) {
 }
 
 // ─── PREVIEW (3 pages) ────────────────────────────────────────────────────────
-function PreviewContent({ data, logoSrc }) {
+function PreviewContent({ data, logoSrc, containerRef }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32, padding: "32px 16px" }}>
+    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32, padding: "32px 16px" }}>
       {/* PAGE 1: CAPA */}
       <ProposalPage data={data} logoSrc={logoSrc}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 0 }}>
@@ -309,6 +309,7 @@ export default function App() {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
+  const previewRef = useRef(null);
   const isMobile = useIsMobile();
 
   // Check auth on load
@@ -461,6 +462,22 @@ export default function App() {
   );
 
   // ── EDITOR SCREEN ──
+
+  const handleExportDoc = () => {
+    if (!previewRef.current) return;
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Proposta</title><style>body{margin:0;background:#fff;} .print-page{page-break-after:always;} .print-page:last-child{page-break-after:auto;}</style></head><body>${previewRef.current.innerHTML}</body></html>`;
+    const blob = new Blob(["﻿", html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const fileName = `proposta-${(data.propostaNumero || data.clienteNome || "rga").toString().replace(/\s+/g, "-").toLowerCase()}.doc`;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const formContent = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", overflowX: "auto", background: "white", WebkitOverflowScrolling: "touch", padding: "0 8px" }}>
@@ -597,9 +614,26 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @media print {
+          @page { size: A4 portrait; margin: 0; }
           .no-print { display: none !important; }
-          body { background: white; margin: 0; }
-          .print-page { page-break-after: always; box-shadow: none !important; max-width: 100% !important; margin: 0 !important; }
+          html, body { background: white; margin: 0; padding: 0; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-page {
+            width: 210mm !important;
+            min-height: 297mm !important;
+            height: 297mm !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            page-break-after: always;
+            break-after: page;
+          }
+          .print-page:last-child {
+            page-break-after: auto;
+            break-after: auto;
+          }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -662,7 +696,12 @@ export default function App() {
 
           <button onClick={() => window.print()}
             style={{ background: "white", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-            🖨️ {!isMobile && "Gerar PDF"}
+            🖨️ {!isMobile && "Imprimir / Salvar PDF"}
+          </button>
+
+          <button onClick={handleExportDoc}
+            style={{ background: "#f8fafc", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+            📝 {!isMobile && "Baixar DOC"}
           </button>
 
           {isMobile && (
@@ -684,7 +723,7 @@ export default function App() {
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {mobileScreen === "form"
             ? <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>{formContent}</div>
-            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}><PreviewContent data={data} logoSrc={logoSrc} /></div>
+            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}><PreviewContent data={data} logoSrc={logoSrc} containerRef={previewRef} /></div>
           }
         </div>
       ) : (
@@ -693,7 +732,7 @@ export default function App() {
             {formContent}
           </div>
           <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "48px 0" }}>
-            <PreviewContent data={data} logoSrc={logoSrc} />
+            <PreviewContent data={data} logoSrc={logoSrc} containerRef={previewRef} />
           </div>
         </div>
       )}
