@@ -53,3 +53,32 @@ npm run dev
 ## Deploy Netlify
 - Build command: npm run build
 - Publish directory: dist
+
+## Gestão de membros por Edge Functions
+
+Foram adicionadas três Edge Functions para administração de membros de organizações:
+
+- `invite_member`
+- `change_member_role`
+- `remove_member`
+
+### Regras de segurança implementadas
+
+- validação de `auth.uid()` em todas as funções;
+- validação de associação à organização alvo (`organization_id`);
+- permissão restrita para papéis `owner`/`admin`;
+- bloqueio para remoção do último `owner`;
+- bloqueio de auto-downgrade inválido de `owner`;
+- gravação de logs de auditoria em `admin_audit_logs`.
+
+### Frontend
+
+O frontend agora expõe helpers que usam `supabase.functions.invoke` em `src/supabase.js`:
+
+- `inviteMember(payload)`
+- `changeMemberRole(payload)`
+- `removeMember(payload)`
+
+### SQL
+
+Use o arquivo `supabase_schema.sql` para criar as tabelas de organização, convites e auditoria.
