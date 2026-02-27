@@ -367,7 +367,7 @@ export default function App() {
   }, [user, navigate]);
 
   const autoSaveEnabled = true;
-  const handleSaveRef = useRef(null);
+ const handleSaveRef = useRef(null);
 
   const set = (key, val) => {
     setData(d => ({ ...d, [key]: val }));
@@ -378,7 +378,6 @@ export default function App() {
       }, 3000);
     }
   };
-
   const handleSaveManual = async () => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     await handleSave();
