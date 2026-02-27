@@ -65,30 +65,46 @@ function FieldGroup({ label, children }) {
   );
 }
 
-function FInput({ value, onChange, placeholder, type = "text" }) {
-  // MELHORIA: removida a máscara inline para simplificar; você pode adicionar uma biblioteca posteriormente.
+// Componente FInput com suporte a máscara de CNPJ (sem dependências externas)
+function FInput({ value, onChange, placeholder, type = "text", mask }) {
   const [isFocused, setIsFocused] = useState(false);
+
+  const handleChange = (e) => {
+    let val = e.target.value;
+    if (mask === "cnpj") {
+      // Remove tudo que não é dígito e limita a 14 dígitos
+      val = val.replace(/\D/g, "").slice(0, 14);
+      // Aplica a máscara: 00.000.000/0000-00
+      val = val.replace(/^(\d{2})(\d)/, "$1.$2");
+      val = val.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+      val = val.replace(/\.(\d{3})(\d)/, ".$1/$2");
+      val = val.replace(/(\d{4})(\d)/, "$1-$2");
+    }
+    // Chama o onChange com o valor modificado (simulando o evento)
+    onChange({ target: { value: val } });
+  };
+
   return (
-    <input 
-      type={type} 
-      value={value} 
-      onChange={onChange} 
+    <input
+      type={type}
+      value={value}
+      onChange={handleChange}
       placeholder={placeholder}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
-      style={{ 
-        width: "100%", 
-        border: `1.5px solid ${isFocused ? "#3b82f6" : "#e2e8f0"}`, 
-        borderRadius: 8, 
-        padding: "12px 14px", 
-        fontSize: 14, 
-        fontFamily: "inherit", 
-        outline: "none", 
-        color: "#1e293b", 
+      style={{
+        width: "100%",
+        border: `1.5px solid ${isFocused ? "#3b82f6" : "#e2e8f0"}`,
+        borderRadius: 8,
+        padding: "12px 14px",
+        fontSize: 14,
+        fontFamily: "inherit",
+        outline: "none",
+        color: "#1e293b",
         transition: "all 0.2s ease",
         boxShadow: isFocused ? "0 0 0 3px rgba(59, 130, 246, 0.1)" : "none",
-        boxSizing: "border-box" 
-      }} 
+        boxSizing: "border-box"
+      }}
     />
   );
 }
@@ -96,26 +112,26 @@ function FInput({ value, onChange, placeholder, type = "text" }) {
 function FTextarea({ value, onChange, rows = 3 }) {
   const [isFocused, setIsFocused] = useState(false);
   return (
-    <textarea 
-      value={value} 
-      onChange={onChange} 
+    <textarea
+      value={value}
+      onChange={onChange}
       rows={rows}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
-      style={{ 
-        width: "100%", 
-        border: `1.5px solid ${isFocused ? "#3b82f6" : "#e2e8f0"}`, 
-        borderRadius: 8, 
-        padding: "12px 14px", 
-        fontSize: 14, 
-        fontFamily: "inherit", 
-        outline: "none", 
-        color: "#1e293b", 
-        resize: "vertical", 
+      style={{
+        width: "100%",
+        border: `1.5px solid ${isFocused ? "#3b82f6" : "#e2e8f0"}`,
+        borderRadius: 8,
+        padding: "12px 14px",
+        fontSize: 14,
+        fontFamily: "inherit",
+        outline: "none",
+        color: "#1e293b",
+        resize: "vertical",
         transition: "all 0.2s ease",
         boxShadow: isFocused ? "0 0 0 3px rgba(59, 130, 246, 0.1)" : "none",
-        boxSizing: "border-box" 
-      }} 
+        boxSizing: "border-box"
+      }}
     />
   );
 }
@@ -295,7 +311,7 @@ export default function App() {
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
-  const [logoSrc, setLogoSrc] = useState(null); // imagem em base64
+  const [logoSrc, setLogoSrc] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [savedId, setSavedId] = useState(null);
@@ -335,9 +351,8 @@ export default function App() {
     await handleSave();
   };
 
-  // CORREÇÃO: incluir logoSrc no payload salvo e verificar se user existe
   const handleSave = async (isAutoSave = false) => {
-    if (!user) return; // segurança: não tenta salvar sem usuário
+    if (!user) return;
     setSaving(true);
     if (!isAutoSave) setSaveMsg("");
     
@@ -348,7 +363,7 @@ export default function App() {
       data_proposta: data.propostaData || null,
       dados: {
         ...data,
-        logoSrc,   // <-- CORREÇÃO: salva o logotipo junto com os dados
+        logoSrc,
       },
     };
 
@@ -369,7 +384,6 @@ export default function App() {
     }
   };
 
-  // MELHORIA: geração do número mais robusta
   const generateProposalNumber = async () => {
     const currentYear = new Date().getFullYear();
     const { data: pData, error } = await supabase
@@ -383,7 +397,6 @@ export default function App() {
     let nextNumber = 1;
     if (!error && pData && pData.length > 0) {
       const lastNumber = pData[0].proposta_numero;
-      // Extrai o número antes da barra (formato esperado: 123/2025)
       const match = lastNumber?.match(/^(\d+)\/\d{4}$/);
       if (match) {
         nextNumber = parseInt(match[1], 10) + 1;
@@ -392,22 +405,19 @@ export default function App() {
     return `${nextNumber}/${currentYear}`;
   };
 
-  // CORREÇÃO: ao criar nova proposta, resetar logoSrc para null
   const handleNew = async () => {
     const newProposalNumber = await generateProposalNumber();
     setData({ ...defaultData, propostaNumero: newProposalNumber });
-    setLogoSrc(null);   // <-- CORREÇÃO: limpa logo anterior
+    setLogoSrc(null);
     setSavedId(null);
     setSaveMsg("");
     setScreen("editor");
   };
 
-  // CORREÇÃO: ao carregar uma proposta, extrair logoSrc de dados
   const handleLoad = (dados, id = null) => {
-    // dados é o objeto JSON salvo no banco, que agora pode conter logoSrc
     const { logoSrc: savedLogo, ...restData } = dados;
     setData(restData);
-    setLogoSrc(savedLogo || null); // restaura o logotipo, se houver
+    setLogoSrc(savedLogo || null);
     setSavedId(id);
     setSaveMsg("");
     setScreen("editor");
@@ -459,7 +469,7 @@ export default function App() {
       user={user}
       onNew={handleNew}
       onLoad={handleLoad}
-      onSignOut={handleSignOut}   // <-- MELHORIA: passa função de logout para a lista
+      onSignOut={handleSignOut}
       corPrimaria={data.corPrimaria}
     />
   );
@@ -486,18 +496,18 @@ export default function App() {
       <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", overflowX: "auto", background: "white", WebkitOverflowScrolling: "touch", padding: "0 8px" }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ 
-              padding: "16px 16px", 
-              border: "none", 
-              background: "none", 
-              fontSize: 12, 
-              fontWeight: 700, 
-              cursor: "pointer", 
-              whiteSpace: "nowrap", 
-              color: tab === t.id ? data.corPrimaria : "#64748b", 
-              borderBottom: `3px solid ${tab === t.id ? data.corPrimaria : "transparent"}`, 
+            style={{
+              padding: "16px 16px",
+              border: "none",
+              background: "none",
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+              color: tab === t.id ? data.corPrimaria : "#64748b",
+              borderBottom: `3px solid ${tab === t.id ? data.corPrimaria : "transparent"}`,
               transition: "all 0.2s ease",
-              flexShrink: 0 
+              flexShrink: 0
             }}>
             {t.label}
           </button>
@@ -552,9 +562,14 @@ export default function App() {
           {[["clienteNome","Nome do Cliente / Empresa"],["propostaValidade","Validade da Proposta"]].map(([k,l]) => (
             <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} /></FieldGroup>
           ))}
+          {/* Campo CNPJ com máscara */}
           <FieldGroup label="CNPJ do Cliente">
-            {/* MELHORIA: removida máscara inline; você pode adicionar uma biblioteca de máscara depois */}
-            <FInput value={data.clienteCNPJ} onChange={e => set("clienteCNPJ", e.target.value)} placeholder="00.000.000/0001-00" />
+            <FInput
+              value={data.clienteCNPJ}
+              onChange={e => set("clienteCNPJ", e.target.value)}
+              mask="cnpj"
+              placeholder="00.000.000/0001-00"
+            />
           </FieldGroup>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <FieldGroup label="Data da Proposta"><FInput type="date" value={data.propostaData} onChange={e => set("propostaData", e.target.value)} /></FieldGroup>
@@ -668,10 +683,10 @@ export default function App() {
         
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {saveMsg && (
-            <div style={{ 
-              fontSize: 12, 
-              color: saveMsg.includes("❌") ? "#ef4444" : "#10b981", 
-              fontWeight: 700, 
+            <div style={{
+              fontSize: 12,
+              color: saveMsg.includes("❌") ? "#ef4444" : "#10b981",
+              fontWeight: 700,
               background: saveMsg.includes("❌") ? "#fef2f2" : "#ecfdf5",
               padding: "6px 12px",
               borderRadius: 20,
@@ -682,14 +697,14 @@ export default function App() {
           )}
           
           <button onClick={handleSaveManual} disabled={saving}
-            style={{ 
-              background: data.corPrimaria, 
-              color: "white", 
-              border: "none", 
-              padding: "10px 20px", 
-              borderRadius: 8, 
-              cursor: saving ? "not-allowed" : "pointer", 
-              fontSize: 13, 
+            style={{
+              background: data.corPrimaria,
+              color: "white",
+              border: "none",
+              padding: "10px 20px",
+              borderRadius: 8,
+              cursor: saving ? "not-allowed" : "pointer",
+              fontSize: 13,
               fontWeight: 700,
               boxShadow: `0 4px 12px ${data.corPrimaria}33`,
               display: "flex",
