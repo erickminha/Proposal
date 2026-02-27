@@ -7,11 +7,12 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const organizationId = user?.app_metadata?.organization_id || user?.user_metadata?.organization_id || null;
 
   useEffect(() => {
     if (!user) return;
     fetchPropostas();
-  }, [user]);
+  }, [user, organizationId]);
 
   useEffect(() => {
     // Filtrar propostas sempre que o termo de busca ou a lista original mudar
@@ -33,11 +34,17 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
 
   const fetchPropostas = async () => {
     try {
+      if (!organizationId) {
+        setError("Organização não identificada para listar propostas.");
+        setPropostas([]);
+        setFilteredPropostas([]);
+        return;
+      }
       setLoading(true);
       const { data, error } = await supabase
         .from("propostas")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("organization_id", organizationId)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -54,7 +61,8 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
     e.stopPropagation();
     if (!window.confirm("Tem certeza que deseja excluir esta proposta?")) return;
     try {
-      const { error } = await supabase.from("propostas").delete().eq("id", id);
+      if (!organizationId) throw new Error("Organização não identificada para excluir proposta.");
+      const { error } = await supabase.from("propostas").delete().eq("id", id).eq("organization_id", organizationId);
       if (error) throw error;
       setPropostas(propostas.filter(p => p.id !== id));
     } catch (err) {
