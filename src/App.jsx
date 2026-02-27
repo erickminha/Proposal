@@ -621,7 +621,6 @@ export default function App() {
           .print-page {
             width: 210mm !important;
             min-height: 297mm !important;
-            height: 297mm !important;
             max-width: 100% !important;
             margin: 0 !important;
             box-shadow: none !important;
