@@ -387,8 +387,11 @@ export default function App() {
     }
     setSaving(true);
     if (!isAutoSave) setSaveMsg("");
+
+    const organizationId = user.user_metadata?.organization_id || user.app_metadata?.organization_id || user.id;
     
     const payload = {
+      user_id: user.id,
       organization_id: organizationId,
       cliente_nome: data.clienteNome,
       proposta_numero: data.propostaNumero,
@@ -397,6 +400,13 @@ export default function App() {
         ...data,
         logoSrc,
       },
+    };
+
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const isNumberConflict = (error) => {
+      if (!error) return false;
+      if (error.code !== "23505") return false;
+      return (error.message || "").includes("organization_id") && (error.message || "").includes("proposta_numero");
     };
 
     let result;
@@ -409,11 +419,25 @@ export default function App() {
         .select()
         .single();
     } else {
-      result = await supabase
-        .from("propostas")
-        .insert({ ...payload, user_id: user.id })
-        .select()
-        .single();
+      const maxAttempts = 3;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const { data: nextNumber, error: numberError } = await supabase.rpc("next_proposal_number", { org_id: organizationId });
+        if (numberError) {
+          result = { error: numberError };
+          break;
+        }
+
+        const createPayload = { ...payload, proposta_numero: nextNumber };
+        result = await supabase.from("propostas").insert(createPayload).select().single();
+
+        if (!result.error) {
+          setData((prev) => ({ ...prev, propostaNumero: nextNumber }));
+          break;
+        }
+
+        if (!isNumberConflict(result.error) || attempt === maxAttempts) break;
+        await wait(150);
+      }
     }
     
     setSaving(false);
@@ -426,31 +450,8 @@ export default function App() {
     }
   };
 
-  const generateProposalNumber = async () => {
-    if (!organizationId) return "1/" + new Date().getFullYear();
-    const currentYear = new Date().getFullYear();
-    const { data: pData, error } = await supabase
-      .from("propostas")
-      .select("proposta_numero")
-      .eq("organization_id", organizationId)
-      .like("proposta_numero", `%/${currentYear}`)
-      .order("created_at", { ascending: false })
-      .limit(1);
-    
-    let nextNumber = 1;
-    if (!error && pData && pData.length > 0) {
-      const lastNumber = pData[0].proposta_numero;
-      const match = lastNumber?.match(/^(\d+)\/\d{4}$/);
-      if (match) {
-        nextNumber = parseInt(match[1], 10) + 1;
-      }
-    }
-    return `${nextNumber}/${currentYear}`;
-  };
-
   const handleNew = async () => {
-    const newProposalNumber = await generateProposalNumber();
-    setData({ ...defaultData, propostaNumero: newProposalNumber });
+    setData({ ...defaultData, propostaNumero: "" });
     setLogoSrc(null);
     setSavedId(null);
     setSaveMsg("");
@@ -612,15 +613,7 @@ export default function App() {
         {tab === "cliente" && <div>
           <div style={{ fontWeight: 800, fontSize: 16, color: "#1e293b", marginBottom: 24 }}>Dados do Cliente</div>
           <FieldGroup label="Nº da Proposta">
-            <div style={{ display: "flex", gap: 8 }}>
-              <FInput value={data.propostaNumero} onChange={e => set("propostaNumero", e.target.value)} />
-              <button onClick={async () => {
-                const newNum = await generateProposalNumber();
-                set("propostaNumero", newNum);
-              }} style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, padding: "0 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                🔄 Gerar
-              </button>
-            </div>
+            <FInput value={data.propostaNumero} onChange={e => set("propostaNumero", e.target.value)} placeholder="Gerado automaticamente ao salvar" />
           </FieldGroup>
           {[["clienteNome","Nome do Cliente / Empresa"],["propostaValidade","Validade da Proposta"]].map(([k,l]) => (
             <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} /></FieldGroup>
