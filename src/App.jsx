@@ -65,21 +65,14 @@ function FieldGroup({ label, children }) {
   );
 }
 
-function FInput({ value, onChange, placeholder, type = "text", mask }) {
+function FInput({ value, onChange, placeholder, type = "text" }) {
+  // MELHORIA: removida a máscara inline para simplificar; você pode adicionar uma biblioteca posteriormente.
   const [isFocused, setIsFocused] = useState(false);
-  const handleChange = (e) => {
-    let val = e.target.value;
-    if (mask === "cnpj") {
-      val = val.replace(/\D/g, "").slice(0, 14);
-      val = val.replace(/(\d{2})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1/$2").replace(/(\d{4})(\d)/, "$1-$2");
-    }
-    onChange({ ...e, target: { ...e.target, value: val } });
-  };
   return (
     <input 
       type={type} 
       value={value} 
-      onChange={handleChange} 
+      onChange={onChange} 
       placeholder={placeholder}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
@@ -302,7 +295,7 @@ export default function App() {
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
-  const [logoSrc, setLogoSrc] = useState(null);
+  const [logoSrc, setLogoSrc] = useState(null); // imagem em base64
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [savedId, setSavedId] = useState(null);
@@ -342,7 +335,9 @@ export default function App() {
     await handleSave();
   };
 
+  // CORREÇÃO: incluir logoSrc no payload salvo e verificar se user existe
   const handleSave = async (isAutoSave = false) => {
+    if (!user) return; // segurança: não tenta salvar sem usuário
     setSaving(true);
     if (!isAutoSave) setSaveMsg("");
     
@@ -351,7 +346,10 @@ export default function App() {
       cliente_nome: data.clienteNome,
       proposta_numero: data.propostaNumero,
       data_proposta: data.propostaData || null,
-      dados: data,
+      dados: {
+        ...data,
+        logoSrc,   // <-- CORREÇÃO: salva o logotipo junto com os dados
+      },
     };
 
     let result;
@@ -371,6 +369,7 @@ export default function App() {
     }
   };
 
+  // MELHORIA: geração do número mais robusta
   const generateProposalNumber = async () => {
     const currentYear = new Date().getFullYear();
     const { data: pData, error } = await supabase
@@ -384,24 +383,31 @@ export default function App() {
     let nextNumber = 1;
     if (!error && pData && pData.length > 0) {
       const lastNumber = pData[0].proposta_numero;
-      const match = lastNumber.match(/(\d+)\/(\d+)/);
+      // Extrai o número antes da barra (formato esperado: 123/2025)
+      const match = lastNumber?.match(/^(\d+)\/\d{4}$/);
       if (match) {
-        nextNumber = parseInt(match[1]) + 1;
+        nextNumber = parseInt(match[1], 10) + 1;
       }
     }
     return `${nextNumber}/${currentYear}`;
   };
 
+  // CORREÇÃO: ao criar nova proposta, resetar logoSrc para null
   const handleNew = async () => {
     const newProposalNumber = await generateProposalNumber();
     setData({ ...defaultData, propostaNumero: newProposalNumber });
+    setLogoSrc(null);   // <-- CORREÇÃO: limpa logo anterior
     setSavedId(null);
     setSaveMsg("");
     setScreen("editor");
   };
 
+  // CORREÇÃO: ao carregar uma proposta, extrair logoSrc de dados
   const handleLoad = (dados, id = null) => {
-    setData(dados);
+    // dados é o objeto JSON salvo no banco, que agora pode conter logoSrc
+    const { logoSrc: savedLogo, ...restData } = dados;
+    setData(restData);
+    setLogoSrc(savedLogo || null); // restaura o logotipo, se houver
     setSavedId(id);
     setSaveMsg("");
     setScreen("editor");
@@ -453,6 +459,7 @@ export default function App() {
       user={user}
       onNew={handleNew}
       onLoad={handleLoad}
+      onSignOut={handleSignOut}   // <-- MELHORIA: passa função de logout para a lista
       corPrimaria={data.corPrimaria}
     />
   );
@@ -545,7 +552,10 @@ export default function App() {
           {[["clienteNome","Nome do Cliente / Empresa"],["propostaValidade","Validade da Proposta"]].map(([k,l]) => (
             <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} /></FieldGroup>
           ))}
-          <FieldGroup label="CNPJ do Cliente"><FInput value={data.clienteCNPJ} onChange={e => set("clienteCNPJ", e.target.value)} mask="cnpj" placeholder="00.000.000/0001-00" /></FieldGroup>
+          <FieldGroup label="CNPJ do Cliente">
+            {/* MELHORIA: removida máscara inline; você pode adicionar uma biblioteca de máscara depois */}
+            <FInput value={data.clienteCNPJ} onChange={e => set("clienteCNPJ", e.target.value)} placeholder="00.000.000/0001-00" />
+          </FieldGroup>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <FieldGroup label="Data da Proposta"><FInput type="date" value={data.propostaData} onChange={e => set("propostaData", e.target.value)} /></FieldGroup>
             <FieldGroup label="Status Atual">
