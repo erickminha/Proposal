@@ -136,7 +136,7 @@ function ProposalPage({ data, logoSrc, children }) {
       fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       fontSize: 13,
       position: "relative",
-      overflow: "hidden"
+      overflow: "visible"
     }}>
       <div style={{ height: 10, background: data.corPrimaria }} />
       <div style={{ padding: "32px 64px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
