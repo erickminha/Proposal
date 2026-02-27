@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { supabase } from "./supabase";
+import { runOnboarding } from "./onboarding";
 
 export default function Auth({ onLogin }) {
   const [mode, setMode] = useState("login"); // "login" | "register"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -15,6 +17,7 @@ export default function Auth({ onLogin }) {
     setSuccess("");
     if (!email || !password) { setError("Preencha e-mail e senha."); return; }
     if (mode === "register" && !nome) { setError("Informe seu nome."); return; }
+    if (mode === "register" && !companyName) { setError("Informe o nome da empresa."); return; }
     if (password.length < 6) { setError("Senha deve ter ao menos 6 caracteres."); return; }
 
     setLoading(true);
@@ -22,12 +25,13 @@ export default function Auth({ onLogin }) {
       if (mode === "register") {
         const { data, error: err } = await supabase.auth.signUp({
           email, password,
-          options: { data: { nome } }
+          options: { data: { nome, company_name: companyName } }
         });
         if (err) throw err;
         if (data.user && !data.session) {
-          setSuccess("Conta criada! Verifique seu e-mail para confirmar o cadastro.");
+          setSuccess("Conta criada! Verifique seu e-mail para confirmar o cadastro. O vínculo com empresa será concluído automaticamente no primeiro login confirmado.");
         } else if (data.session) {
+          await runOnboarding(companyName);
           onLogin(data.session.user);
         }
       } else {
@@ -89,11 +93,18 @@ export default function Auth({ onLogin }) {
         {/* Fields */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {mode === "register" && (
-            <div>
-              <label style={labelStyle}>Nome completo</label>
-              <input value={nome} onChange={e => setNome(e.target.value)} onKeyDown={handleKey}
-                placeholder="Seu nome" style={inputStyle} />
-            </div>
+            <>
+              <div>
+                <label style={labelStyle}>Nome completo</label>
+                <input value={nome} onChange={e => setNome(e.target.value)} onKeyDown={handleKey}
+                  placeholder="Seu nome" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Empresa</label>
+                <input value={companyName} onChange={e => setCompanyName(e.target.value)} onKeyDown={handleKey}
+                  placeholder="Nome da empresa" style={inputStyle} />
+              </div>
+            </>
           )}
           <div>
             <label style={labelStyle}>E-mail</label>

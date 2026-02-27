@@ -1,7 +1,9 @@
-  import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
+import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 
 // ─── DEFAULT DATA ─────────────────────────────────────────────────────────────
 const defaultData = {
@@ -310,27 +312,58 @@ export default function App() {
   const [logoSrc, setLogoSrc] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [onboardingError, setOnboardingError] = useState("");
   const [savedId, setSavedId] = useState(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
   const previewRef = useRef(null);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   // Check auth on load
   useEffect(() => {
+    const ensureUserOnboarding = async (authUser) => {
+      if (!authUser) {
+        setOnboardingError("");
+        return;
+      }
+      try {
+        await runOnboarding(authUser.user_metadata?.company_name);
+        setOnboardingError("");
+      } catch (error) {
+        setOnboardingError(error.message);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
+      ensureUserOnboarding(session?.user || null);
       setAuthChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user || null);
+      ensureUserOnboarding(session?.user || null);
     });
     return () => {
       subscription.unsubscribe();
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
   }, []);
+
+
+  useEffect(() => {
+    if (!user) return;
+
+    const pendingToken = getPendingInviteToken();
+    if (!pendingToken) return;
+
+    acceptInviteForUser({ token: pendingToken, user }).then((result) => {
+      if (!result.ok) return;
+      clearPendingInviteToken();
+      navigate("/", { replace: true });
+    });
+  }, [user, navigate]);
 
   const set = (key, val) => {
     setData(d => ({ ...d, [key]: val }));
@@ -348,12 +381,18 @@ export default function App() {
   };
 
   const handleSave = async (isAutoSave = false) => {
-    if (!user) return;
+    if (!user || !organizationId) {
+      setSaveMsg("❌ Organização não identificada para salvar a proposta.");
+      return;
+    }
     setSaving(true);
     if (!isAutoSave) setSaveMsg("");
+
+    const organizationId = user.user_metadata?.organization_id || user.app_metadata?.organization_id || user.id;
     
     const payload = {
       user_id: user.id,
+      organization_id: organizationId,
       cliente_nome: data.clienteNome,
       proposta_numero: data.propostaNumero,
       data_proposta: data.propostaData || null,
@@ -363,11 +402,42 @@ export default function App() {
       },
     };
 
+    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const isNumberConflict = (error) => {
+      if (!error) return false;
+      if (error.code !== "23505") return false;
+      return (error.message || "").includes("organization_id") && (error.message || "").includes("proposta_numero");
+    };
+
     let result;
     if (savedId) {
-      result = await supabase.from("propostas").update(payload).eq("id", savedId).select().single();
+      result = await supabase
+        .from("propostas")
+        .update(payload)
+        .eq("id", savedId)
+        .eq("organization_id", organizationId)
+        .select()
+        .single();
     } else {
-      result = await supabase.from("propostas").insert(payload).select().single();
+      const maxAttempts = 3;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const { data: nextNumber, error: numberError } = await supabase.rpc("next_proposal_number", { org_id: organizationId });
+        if (numberError) {
+          result = { error: numberError };
+          break;
+        }
+
+        const createPayload = { ...payload, proposta_numero: nextNumber };
+        result = await supabase.from("propostas").insert(createPayload).select().single();
+
+        if (!result.error) {
+          setData((prev) => ({ ...prev, propostaNumero: nextNumber }));
+          break;
+        }
+
+        if (!isNumberConflict(result.error) || attempt === maxAttempts) break;
+        await wait(150);
+      }
     }
     
     setSaving(false);
@@ -380,30 +450,8 @@ export default function App() {
     }
   };
 
-  const generateProposalNumber = async () => {
-    const currentYear = new Date().getFullYear();
-    const { data: pData, error } = await supabase
-      .from("propostas")
-      .select("proposta_numero")
-      .eq("user_id", user.id)
-      .like("proposta_numero", `%/${currentYear}`)
-      .order("created_at", { ascending: false })
-      .limit(1);
-    
-    let nextNumber = 1;
-    if (!error && pData && pData.length > 0) {
-      const lastNumber = pData[0].proposta_numero;
-      const match = lastNumber?.match(/^(\d+)\/\d{4}$/);
-      if (match) {
-        nextNumber = parseInt(match[1], 10) + 1;
-      }
-    }
-    return `${nextNumber}/${currentYear}`;
-  };
-
   const handleNew = async () => {
-    const newProposalNumber = await generateProposalNumber();
-    setData({ ...defaultData, propostaNumero: newProposalNumber });
+    setData({ ...defaultData, propostaNumero: "" });
     setLogoSrc(null);
     setSavedId(null);
     setSaveMsg("");
@@ -461,13 +509,33 @@ export default function App() {
   if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("list"); }} />;
 
   if (screen === "list") return (
-    <ProposalList
-      user={user}
-      onNew={handleNew}
-      onLoad={handleLoad}
-      onSignOut={handleSignOut}
-      corPrimaria={data.corPrimaria}
-    />
+    <>
+      {onboardingError && (
+        <div style={{ background: "#fff3cd", color: "#7a5b00", border: "1px solid #ffe08a", borderRadius: 10, padding: "12px 16px", margin: "16px 24px 0", fontSize: 14, fontWeight: 600 }}>
+          ⚠️ {onboardingError}
+          <button
+            onClick={async () => {
+              try {
+                await runOnboarding(user?.user_metadata?.company_name);
+                setOnboardingError("");
+              } catch (error) {
+                setOnboardingError(error.message);
+              }
+            }}
+            style={{ marginLeft: 10, background: "transparent", border: "1px solid #d4b106", color: "#7a5b00", borderRadius: 6, padding: "6px 10px", cursor: "pointer", fontWeight: 700 }}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      <ProposalList
+        user={user}
+        onNew={handleNew}
+        onLoad={handleLoad}
+        onSignOut={handleSignOut}
+        corPrimaria={data.corPrimaria}
+      />
+    </>
   );
 
   // ── EDITOR SCREEN ──
@@ -545,15 +613,7 @@ export default function App() {
         {tab === "cliente" && <div>
           <div style={{ fontWeight: 800, fontSize: 16, color: "#1e293b", marginBottom: 24 }}>Dados do Cliente</div>
           <FieldGroup label="Nº da Proposta">
-            <div style={{ display: "flex", gap: 8 }}>
-              <FInput value={data.propostaNumero} onChange={e => set("propostaNumero", e.target.value)} />
-              <button onClick={async () => {
-                const newNum = await generateProposalNumber();
-                set("propostaNumero", newNum);
-              }} style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, padding: "0 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-                🔄 Gerar
-              </button>
-            </div>
+            <FInput value={data.propostaNumero} onChange={e => set("propostaNumero", e.target.value)} placeholder="Gerado automaticamente ao salvar" />
           </FieldGroup>
           {[["clienteNome","Nome do Cliente / Empresa"],["propostaValidade","Validade da Proposta"]].map(([k,l]) => (
             <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} /></FieldGroup>
