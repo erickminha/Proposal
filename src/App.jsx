@@ -1,7 +1,8 @@
-  import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
+import { runOnboarding } from "./onboarding";
 
 // ─── DEFAULT DATA ─────────────────────────────────────────────────────────────
 const defaultData = {
@@ -310,6 +311,7 @@ export default function App() {
   const [logoSrc, setLogoSrc] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [onboardingError, setOnboardingError] = useState("");
   const [savedId, setSavedId] = useState(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const logoRef = useRef();
@@ -319,12 +321,27 @@ export default function App() {
 
   // Check auth on load
   useEffect(() => {
+    const ensureUserOnboarding = async (authUser) => {
+      if (!authUser) {
+        setOnboardingError("");
+        return;
+      }
+      try {
+        await runOnboarding(authUser.user_metadata?.company_name);
+        setOnboardingError("");
+      } catch (error) {
+        setOnboardingError(error.message);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
+      ensureUserOnboarding(session?.user || null);
       setAuthChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user || null);
+      ensureUserOnboarding(session?.user || null);
     });
     return () => {
       subscription.unsubscribe();
@@ -461,13 +478,33 @@ export default function App() {
   if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("list"); }} />;
 
   if (screen === "list") return (
-    <ProposalList
-      user={user}
-      onNew={handleNew}
-      onLoad={handleLoad}
-      onSignOut={handleSignOut}
-      corPrimaria={data.corPrimaria}
-    />
+    <>
+      {onboardingError && (
+        <div style={{ background: "#fff3cd", color: "#7a5b00", border: "1px solid #ffe08a", borderRadius: 10, padding: "12px 16px", margin: "16px 24px 0", fontSize: 14, fontWeight: 600 }}>
+          ⚠️ {onboardingError}
+          <button
+            onClick={async () => {
+              try {
+                await runOnboarding(user?.user_metadata?.company_name);
+                setOnboardingError("");
+              } catch (error) {
+                setOnboardingError(error.message);
+              }
+            }}
+            style={{ marginLeft: 10, background: "transparent", border: "1px solid #d4b106", color: "#7a5b00", borderRadius: 6, padding: "6px 10px", cursor: "pointer", fontWeight: 700 }}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      <ProposalList
+        user={user}
+        onNew={handleNew}
+        onLoad={handleLoad}
+        onSignOut={handleSignOut}
+        corPrimaria={data.corPrimaria}
+      />
+    </>
   );
 
   // ── EDITOR SCREEN ──
