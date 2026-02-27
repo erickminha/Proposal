@@ -353,10 +353,6 @@ export default function App() {
       data_proposta: data.propostaData || null,
       dados: data,
     };
-    
-    if (data.status) {
-      payload.status = data.status;
-    }
 
     let result;
     if (savedId) {
