@@ -15,10 +15,30 @@ export class HttpError extends Error {
   }
 }
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+export function isPreflightRequest(req: Request) {
+  return req.method === "OPTIONS";
+}
+
+export function preflightResponse() {
+  return new Response("ok", {
+    status: 200,
+    headers: CORS_HEADERS,
+  });
+}
+
 export function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...CORS_HEADERS,
+    },
   });
 }
 
