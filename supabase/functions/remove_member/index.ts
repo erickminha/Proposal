@@ -1,12 +1,11 @@
 import {
+  countOwners,
   ensureCanManageMembers,
   getClients,
   getMembership,
   getRequester,
   HttpError,
-  isPreflightRequest,
   jsonResponse,
-  preflightResponse,
   writeAuditLog,
 } from "../_shared/admin.ts";
 
@@ -16,10 +15,6 @@ type RemoveMemberBody = {
 };
 
 Deno.serve(async (req) => {
-  if (isPreflightRequest(req)) {
-    return preflightResponse();
-  }
-
   try {
     if (req.method !== "POST") {
       throw new HttpError(405, "Method not allowed.");
@@ -45,18 +40,20 @@ Deno.serve(async (req) => {
       throw new HttpError(403, "Admin não pode remover owner/admin.");
     }
 
-    const { error } = await adminClient.rpc("remove_member_safely", {
-      p_organization_id: organizationId,
-      p_target_user_id: targetUserId,
-    });
-
-    if (error) {
-      if (error.message.includes("Não é permitido remover o último owner.")) {
-        throw new HttpError(400, error.message);
+    if (targetMembership.role === "owner") {
+      const owners = await countOwners(adminClient, organizationId);
+      if (owners <= 1) {
+        throw new HttpError(400, "Não é permitido remover o último owner.");
       }
-
-      throw new HttpError(500, error.message);
     }
+
+    const { error } = await adminClient
+      .from("organization_members")
+      .delete()
+      .eq("organization_id", organizationId)
+      .eq("user_id", targetUserId);
+
+    if (error) throw new HttpError(500, error.message);
 
     await writeAuditLog(adminClient, {
       organizationId,

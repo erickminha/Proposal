@@ -27,7 +27,10 @@ export function FInput({ value, onChange, placeholder, type = "text", mask }) {
     let val = e.target.value;
     if (mask === "cnpj") {
       val = val.replace(/\D/g, "").slice(0, 14);
-      val = val.replace(/(\d{2})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1/$2").replace(/(\d{4})(\d)/, "$1-$2");
+      val = val.replace(/^(\d{2})(\d)/, "$1.$2");
+      val = val.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+      val = val.replace(/\.(\d{3})(\d)/, ".$1/$2");
+      val = val.replace(/(\d{4})(\d)/, "$1-$2");
     }
     onChange({ ...e, target: { ...e.target, value: val } });
   };

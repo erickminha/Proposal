@@ -5,9 +5,7 @@ import {
   getMembership,
   getRequester,
   HttpError,
-  isPreflightRequest,
   jsonResponse,
-  preflightResponse,
   writeAuditLog,
 } from "../_shared/admin.ts";
 
@@ -18,10 +16,6 @@ type InviteBody = {
 };
 
 Deno.serve(async (req) => {
-  if (isPreflightRequest(req)) {
-    return preflightResponse();
-  }
-
   try {
     if (req.method !== "POST") {
       throw new HttpError(405, "Method not allowed.");

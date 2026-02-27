@@ -45,7 +45,7 @@ with users_without_profile as (
   where not exists (
     select 1
     from public.profiles p
-    where p.user_id = u.id
+    where p.id = u.id
   )
 )
 insert into public.organizations (id, name)
@@ -68,10 +68,10 @@ with users_without_profile as (
   where not exists (
     select 1
     from public.profiles p
-    where p.user_id = u.id
+    where p.id = u.id
   )
 )
-insert into public.profiles (user_id, organization_id, role)
+insert into public.profiles (id, organization_id, role)
 select uwp.user_id,
        uwp.organization_id,
        'owner'
@@ -79,14 +79,14 @@ from users_without_profile uwp
 where not exists (
   select 1
   from public.profiles p
-  where p.user_id = uwp.user_id
+  where p.id = uwp.user_id
 );
 
 -- 3) Backfill de propostas.organization_id a partir de propostas.user_id -> profiles.
 update public.propostas pr
 set organization_id = pf.organization_id
 from public.profiles pf
-where pf.user_id = pr.user_id
+where pf.id = pr.user_id
   and pr.organization_id is null;
 
 -- 4) Validações pós-migração (abortam a transação se houver inconsistência).

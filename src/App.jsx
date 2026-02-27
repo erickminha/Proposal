@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
+import { runOnboarding } from "./onboarding";
 
 // ─── DEFAULT DATA ─────────────────────────────────────────────────────────────
 const defaultData = {
@@ -314,7 +315,7 @@ export default function App() {
   const [saveMsg, setSaveMsg] = useState("");
   const [onboardingError, setOnboardingError] = useState("");
   const [savedId, setSavedId] = useState(null);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [autoSaveEnabled] = useState(true);
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
   const previewRef = useRef(null);
@@ -365,12 +366,15 @@ export default function App() {
     });
   }, [user, navigate]);
 
+  const autoSaveEnabled = true;
+  const handleSaveRef = useRef(null);
+
   const set = (key, val) => {
     setData(d => ({ ...d, [key]: val }));
     if (autoSaveEnabled && savedId) {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = setTimeout(() => {
-        handleSave(true);
+        if (handleSaveRef.current) handleSaveRef.current(true);
       }, 3000);
     }
   };
@@ -381,14 +385,14 @@ export default function App() {
   };
 
   const handleSave = async (isAutoSave = false) => {
+    const organizationId = user?.user_metadata?.organization_id || user?.app_metadata?.organization_id || user?.id;
+
     if (!user || !organizationId) {
       setSaveMsg("❌ Organização não identificada para salvar a proposta.");
       return;
     }
     setSaving(true);
     if (!isAutoSave) setSaveMsg("");
-
-    const organizationId = user.user_metadata?.organization_id || user.app_metadata?.organization_id || user.id;
     
     const payload = {
       user_id: user.id,
@@ -449,6 +453,9 @@ export default function App() {
       setTimeout(() => setSaveMsg(""), 3000);
     }
   };
+
+  // Mantém a ref sempre atualizada com a versão mais recente de handleSave
+  handleSaveRef.current = handleSave;
 
   const handleNew = async () => {
     setData({ ...defaultData, propostaNumero: "" });
