@@ -131,7 +131,7 @@ function FTextarea({ value, onChange, rows = 3 }) {
 function ProposalPage({ data, logoSrc, children }) {
   return (
     <div className="print-page" style={{
-      background: "white", width: "100%", maxWidth: 794, minHeight: 1123,
+      background: "white", width: "100%", maxWidth: 794, minHeight: 1123, height: "auto",
       boxShadow: "0 10px 25px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column",
       fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       fontSize: 13,
