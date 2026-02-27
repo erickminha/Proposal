@@ -14,25 +14,26 @@ export default function ProposalList({ user, onNew, onLoad, corPrimaria = "#1976
   const [deleting, setDeleting] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
 
-  useEffect(() => { fetchProposals(); }, []);
+  useEffect(() => {
+    if (user?.id) fetchProposals();
+  }, [user?.id]);
 
   const fetchProposals = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("propostas")
-      .select("id, cliente_nome, proposta_numero, created_at, data_proposta, status")
+      .select("id, cliente_nome, proposta_numero, created_at, data_proposta, dados")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     
-    if (error && error.message && error.message.includes("status")) {
-      const { data: fallbackData, error: fallbackError } = await supabase
-        .from("propostas")
-        .select("id, cliente_nome, proposta_numero, created_at, data_proposta")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-      if (!fallbackError) setProposals(fallbackData || []);
-    } else if (!error) {
-      setProposals(data || []);
+    if (!error) {
+      const normalized = (data || []).map((p) => ({
+        ...p,
+        cliente_nome: p.cliente_nome || p.dados?.clienteNome || "",
+        proposta_numero: p.proposta_numero || p.dados?.propostaNumero || "",
+        status: p.dados?.status || "Rascunho",
+      }));
+      setProposals(normalized);
     }
     setLoading(false);
   };
