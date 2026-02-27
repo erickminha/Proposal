@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+  import { useState, useRef, useEffect } from "react";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
@@ -65,22 +65,18 @@ function FieldGroup({ label, children }) {
   );
 }
 
-// Componente FInput com suporte a máscara de CNPJ (sem dependências externas)
 function FInput({ value, onChange, placeholder, type = "text", mask }) {
   const [isFocused, setIsFocused] = useState(false);
 
   const handleChange = (e) => {
     let val = e.target.value;
     if (mask === "cnpj") {
-      // Remove tudo que não é dígito e limita a 14 dígitos
       val = val.replace(/\D/g, "").slice(0, 14);
-      // Aplica a máscara: 00.000.000/0000-00
       val = val.replace(/^(\d{2})(\d)/, "$1.$2");
       val = val.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
       val = val.replace(/\.(\d{3})(\d)/, ".$1/$2");
       val = val.replace(/(\d{4})(\d)/, "$1-$2");
     }
-    // Chama o onChange com o valor modificado (simulando o evento)
     onChange({ target: { value: val } });
   };
 
@@ -174,11 +170,11 @@ function ProposalPage({ data, logoSrc, children }) {
 // ─── PREVIEW (3 pages) ────────────────────────────────────────────────────────
 function PreviewContent({ data, logoSrc, containerRef }) {
   return (
-    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32, padding: "32px 16px" }}>
+    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 16px" }}>
       {/* PAGE 1: CAPA */}
       <ProposalPage data={data} logoSrc={logoSrc}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 0 }}>
-          {logoSrc ? <img src={logoSrc} style={{ maxWidth: 280, maxHeight: 200, objectFit: "contain", marginBottom: 24 }} />
+          {logoSrc ? <img src={logoSrc} style={{ maxWidth: 280, maxHeight: 180, objectFit: "contain", marginBottom: 24 }} />
             : <div style={{ textAlign: "center", marginBottom: 24 }}>
                 <div style={{ fontSize: 64, fontWeight: 900, color: data.corPrimaria, letterSpacing: 4 }}>{data.empresaNome.split(" ")[0]}</div>
                 <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: "0.4em", color: "#475569", marginTop: 8 }}>{data.empresaSubtitulo}</div>
@@ -196,25 +192,25 @@ function PreviewContent({ data, logoSrc, containerRef }) {
       {/* PAGE 2: INTRODUÇÃO */}
       <ProposalPage data={data} logoSrc={logoSrc}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: data.corPrimaria, marginBottom: 28, letterSpacing: 1 }}>APRESENTAÇÃO</div>
-          <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8, color: "#1e293b" }}>À {data.clienteNome || "—"};</div>
-          <div style={{ height: 2, width: 40, background: data.corSecundaria, marginBottom: 24 }} />
+          <div style={{ fontSize: 13, fontWeight: 800, color: data.corPrimaria, marginBottom: 20, letterSpacing: 1 }}>APRESENTAÇÃO</div>
+          <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6, color: "#1e293b" }}>À {data.clienteNome || "—"};</div>
+          <div style={{ height: 2, width: 40, background: data.corSecundaria, marginBottom: 20 }} />
           
           {data.introTexto.split("\n\n").map((p, i) => (
-            <p key={i} style={{ fontSize: 14, lineHeight: 1.75, marginBottom: 14, color: "#334155", textAlign: "justify" }}>{p}</p>
+            <p key={i} style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12, color: "#334155", textAlign: "justify" }}>{p}</p>
           ))}
           
-          <div style={{ fontWeight: 800, fontSize: 15, marginTop: 28, marginBottom: 16, color: data.corPrimaria, letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ fontWeight: 800, fontSize: 14, marginTop: 20, marginBottom: 12, color: data.corPrimaria, letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}>
             <span aria-hidden="true">⭐</span> POR QUE A {data.empresaNome.toUpperCase().split(" ")[0]}?
           </div>
           
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
             {data.diferenciais.slice(0, 4).map((d, i) => (
-              <div key={i} style={{ marginBottom: 8 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, color: "#1e293b", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+              <div key={i} style={{ marginBottom: 4 }}>
+                <div style={{ fontWeight: 700, fontSize: 12, color: "#1e293b", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ color: data.corPrimaria }}>●</span> {d.titulo}
                 </div>
-                <p style={{ fontSize: 12, lineHeight: 1.5, color: "#64748b" }}>{d.descricao}</p>
+                <p style={{ fontSize: 11, lineHeight: 1.4, color: "#64748b" }}>{d.descricao}</p>
               </div>
             ))}
           </div>
@@ -224,79 +220,79 @@ function PreviewContent({ data, logoSrc, containerRef }) {
       {/* PAGE 3: METODOLOGIA E INVESTIMENTO */}
       <ProposalPage data={data} logoSrc={logoSrc}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: data.corPrimaria, marginBottom: 20, letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: data.corPrimaria, marginBottom: 16, letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}>
             <span aria-hidden="true">📊</span> METODOLOGIA E INVESTIMENTO
           </div>
           
-          <div style={{ background: "#f8fafc", padding: 20, borderRadius: 8, marginBottom: 22 }}>
-            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 14, color: "#1e293b" }}>Como funciona nosso processo:</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{ background: "#f8fafc", padding: 16, borderRadius: 8, marginBottom: 18 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10, color: "#1e293b" }}>Como funciona nosso processo:</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {data.etapas.map((e, i) => (
-                <div key={i} style={{ display: "flex", gap: 10 }}>
-                  <div style={{ background: data.corPrimaria, color: "white", width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 800, flexShrink: 0 }}>{e.numero}</div>
+                <div key={i} style={{ display: "flex", gap: 8 }}>
+                  <div style={{ background: data.corPrimaria, color: "white", width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, flexShrink: 0 }}>{e.numero}</div>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#1e293b" }}>{e.etapa}</div>
-                    <div style={{ fontSize: 11, color: "#64748b", lineHeight: 1.35 }}>{e.descricao}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#1e293b" }}>{e.etapa}</div>
+                    <div style={{ fontSize: 10, color: "#64748b", lineHeight: 1.3 }}>{e.descricao}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: "#1e293b" }}>Tabela de Investimento:</div>
-          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16, fontSize: 13 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "#1e293b" }}>Tabela de Investimento:</div>
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14, fontSize: 12 }}>
             <thead>
               <tr style={{ background: data.corPrimaria }}>
-                <th style={{ color: "white", padding: "12px 16px", textAlign: "left", fontWeight: 700, borderRadius: "6px 0 0 0" }}>Nível da Vaga</th>
-                <th style={{ color: "white", padding: "12px 16px", textAlign: "right", fontWeight: 700, borderRadius: "0 6px 0 0" }}>Investimento</th>
+                <th style={{ color: "white", padding: "8px 12px", textAlign: "left", fontWeight: 700, borderRadius: "6px 0 0 0" }}>Nível da Vaga</th>
+                <th style={{ color: "white", padding: "8px 12px", textAlign: "right", fontWeight: 700, borderRadius: "0 6px 0 0" }}>Investimento</th>
               </tr>
             </thead>
             <tbody>
               {data.niveis.map((n, i) => (
                 <tr key={i} style={{ background: i % 2 === 0 ? "white" : "#f1f5f9" }}>
-                  <td style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", color: "#334155" }}>
-                    <span style={{ fontWeight: 700 }}>{n.nivel}</span> <span style={{ fontSize: 11, color: "#64748b" }}>({n.exemplos})</span>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", color: "#334155" }}>
+                    <span style={{ fontWeight: 700 }}>{n.nivel}</span> <span style={{ fontSize: 10, color: "#64748b" }}>({n.exemplos})</span>
                   </td>
-                  <td style={{ padding: "12px 16px", borderBottom: "1px solid #e2e8f0", textAlign: "right", fontWeight: 800, color: data.corPrimaria }}>{n.percentual}</td>
+                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", textAlign: "right", fontWeight: 800, color: data.corPrimaria }}>{n.percentual}</td>
                 </tr>
               ))}
             </tbody>
           </table>
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 28 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "#1e293b" }}>Condições Comerciais</div>
-              <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.6 }}>
+              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6, color: "#1e293b" }}>Condições Comerciais</div>
+              <div style={{ fontSize: 11, color: "#475569", lineHeight: 1.5 }}>
                 <div>• Pagamento: {data.formaPagamento}</div>
                 <div>• Forma: {data.formaPix}</div>
                 <div>• Validade: {data.propostaValidade}</div>
               </div>
             </div>
-            <div style={{ background: "#f1f5f9", padding: "12px 20px", borderRadius: 6, textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: "#64748b", fontWeight: 600 }}>Tributos</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#1e293b" }}>{data.tributos}</div>
+            <div style={{ background: "#f1f5f9", padding: "8px 16px", borderRadius: 6, textAlign: "center" }}>
+              <div style={{ fontSize: 10, color: "#64748b", fontWeight: 600 }}>Tributos</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#1e293b" }}>{data.tributos}</div>
             </div>
           </div>
 
-          <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: data.corPrimaria, marginBottom: 14, letterSpacing: 1 }}>PRÓXIMOS PASSOS</div>
-          {data.proximosPassos.split("\n\n").map((p, i) => (
-            <p key={i} style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 10, color: "#334155" }}>{p}</p>
-          ))}
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 10, letterSpacing: 1 }}>PRÓXIMOS PASSOS</div>
+            {data.proximosPassos.split("\n\n").map((p, i) => (
+              <p key={i} style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 8, color: "#334155" }}>{p}</p>
+            ))}
           </div>
         
-        <div style={{ marginTop: 30, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ height: 1, background: "#cbd5e1", marginBottom: 12 }} />
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b" }}>{data.empresaRazaoSocial}</div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>CONTRATADA • CNPJ: {data.empresaCNPJ}</div>
+          <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ height: 1, background: "#cbd5e1", marginBottom: 8 }} />
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#1e293b" }}>{data.empresaRazaoSocial}</div>
+              <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>CONTRATADA • CNPJ: {data.empresaCNPJ}</div>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <div style={{ height: 1, background: "#cbd5e1", marginBottom: 8 }} />
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#1e293b" }}>{data.clienteNome || "CONTRATANTE"}</div>
+              <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>CONTRATANTE • CNPJ: {data.clienteCNPJ || "—"}</div>
+            </div>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ height: 1, background: "#cbd5e1", marginBottom: 12 }} />
-            <div style={{ fontSize: 13, fontWeight: 800, color: "#1e293b" }}>{data.clienteNome || "CONTRATANTE"}</div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>CONTRATANTE • CNPJ: {data.clienteCNPJ || "—"}</div>
-          </div>
-        </div>
         </div>
       </ProposalPage>
     </div>
@@ -562,7 +558,6 @@ export default function App() {
           {[["clienteNome","Nome do Cliente / Empresa"],["propostaValidade","Validade da Proposta"]].map(([k,l]) => (
             <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} /></FieldGroup>
           ))}
-          {/* Campo CNPJ com máscara */}
           <FieldGroup label="CNPJ do Cliente">
             <FInput
               value={data.clienteCNPJ}
@@ -635,22 +630,35 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @media print {
-          @page { size: A4 portrait; margin: 0; }
-          .no-print { display: none !important; }
-          html, body { background: white; margin: 0; padding: 0; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          @page { 
+            size: A4 portrait; 
+            margin: 0; 
+          }
+          .no-print { 
+            display: none !important; 
+          }
+          html, body { 
+            background: white; 
+            margin: 0; 
+            padding: 0; 
+            width: 210mm;
+            height: 297mm;
+          }
+          body { 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact; 
+          }
           .print-page {
             width: 210mm !important;
-            min-height: 297mm !important;
-            height: auto !important;
-            max-width: 100% !important;
+            height: 297mm !important;
+            max-height: 297mm !important;
             margin: 0 !important;
+            padding: 0 !important;
             box-shadow: none !important;
             overflow: hidden !important;
-            page-break-inside: auto;
-            break-inside: auto;
             page-break-after: always;
-            break-after: page;
+            page-break-inside: avoid;
+            break-inside: avoid;
           }
           .print-page:last-child {
             page-break-after: auto;
