@@ -312,6 +312,7 @@ export default function App() {
   const [logoSrc, setLogoSrc] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [onboardingError, setOnboardingError] = useState("");
   const [savedId, setSavedId] = useState(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const logoRef = useRef();
@@ -322,12 +323,27 @@ export default function App() {
 
   // Check auth on load
   useEffect(() => {
+    const ensureUserOnboarding = async (authUser) => {
+      if (!authUser) {
+        setOnboardingError("");
+        return;
+      }
+      try {
+        await runOnboarding(authUser.user_metadata?.company_name);
+        setOnboardingError("");
+      } catch (error) {
+        setOnboardingError(error.message);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
+      ensureUserOnboarding(session?.user || null);
       setAuthChecked(true);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user || null);
+      ensureUserOnboarding(session?.user || null);
     });
     return () => {
       subscription.unsubscribe();
@@ -365,12 +381,15 @@ export default function App() {
   };
 
   const handleSave = async (isAutoSave = false) => {
-    if (!user) return;
+    if (!user || !organizationId) {
+      setSaveMsg("❌ Organização não identificada para salvar a proposta.");
+      return;
+    }
     setSaving(true);
     if (!isAutoSave) setSaveMsg("");
     
     const payload = {
-      user_id: user.id,
+      organization_id: organizationId,
       cliente_nome: data.clienteNome,
       proposta_numero: data.propostaNumero,
       data_proposta: data.propostaData || null,
@@ -382,9 +401,19 @@ export default function App() {
 
     let result;
     if (savedId) {
-      result = await supabase.from("propostas").update(payload).eq("id", savedId).select().single();
+      result = await supabase
+        .from("propostas")
+        .update(payload)
+        .eq("id", savedId)
+        .eq("organization_id", organizationId)
+        .select()
+        .single();
     } else {
-      result = await supabase.from("propostas").insert(payload).select().single();
+      result = await supabase
+        .from("propostas")
+        .insert({ ...payload, user_id: user.id })
+        .select()
+        .single();
     }
     
     setSaving(false);
@@ -398,11 +427,12 @@ export default function App() {
   };
 
   const generateProposalNumber = async () => {
+    if (!organizationId) return "1/" + new Date().getFullYear();
     const currentYear = new Date().getFullYear();
     const { data: pData, error } = await supabase
       .from("propostas")
       .select("proposta_numero")
-      .eq("user_id", user.id)
+      .eq("organization_id", organizationId)
       .like("proposta_numero", `%/${currentYear}`)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -478,13 +508,33 @@ export default function App() {
   if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("list"); }} />;
 
   if (screen === "list") return (
-    <ProposalList
-      user={user}
-      onNew={handleNew}
-      onLoad={handleLoad}
-      onSignOut={handleSignOut}
-      corPrimaria={data.corPrimaria}
-    />
+    <>
+      {onboardingError && (
+        <div style={{ background: "#fff3cd", color: "#7a5b00", border: "1px solid #ffe08a", borderRadius: 10, padding: "12px 16px", margin: "16px 24px 0", fontSize: 14, fontWeight: 600 }}>
+          ⚠️ {onboardingError}
+          <button
+            onClick={async () => {
+              try {
+                await runOnboarding(user?.user_metadata?.company_name);
+                setOnboardingError("");
+              } catch (error) {
+                setOnboardingError(error.message);
+              }
+            }}
+            style={{ marginLeft: 10, background: "transparent", border: "1px solid #d4b106", color: "#7a5b00", borderRadius: 6, padding: "6px 10px", cursor: "pointer", fontWeight: 700 }}
+          >
+            Tentar novamente
+          </button>
+        </div>
+      )}
+      <ProposalList
+        user={user}
+        onNew={handleNew}
+        onLoad={handleLoad}
+        onSignOut={handleSignOut}
+        corPrimaria={data.corPrimaria}
+      />
+    </>
   );
 
   // ── EDITOR SCREEN ──

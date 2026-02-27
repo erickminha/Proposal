@@ -29,6 +29,11 @@ create policy "Usuário vê suas propostas"
   using (auth.uid() = user_id);
 ```
 
+
+### 2.1. Configurar onboarding transacional (organizations + profiles)
+Execute também o SQL de `supabase/migrations/20260227100000_onboarding.sql`.
+Ele cria as tabelas `organizations` e `profiles` (se ainda não existirem) e a função RPC segura `complete_onboarding`, que faz o vínculo de forma idempotente sem risco de inconsistência parcial.
+
 ### 3. Pegar credenciais
 Supabase → Settings → API → copiar Project URL e anon key
 
