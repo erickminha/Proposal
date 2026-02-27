@@ -75,32 +75,13 @@ export function CompanyTab({ data, set, logoSrc, logoRef, handleLogo }) {
   );
 }
 
-export function ClientTab({ data, set, generateProposalNumber }) {
+export function ClientTab({ data, set }) {
   return (
     <div>
       <div style={{ fontWeight: 800, fontSize: 18, color: "#0f172a", marginBottom: 24, letterSpacing: "-0.02em" }}>Dados do Cliente</div>
       
       <FieldGroup label="Identificação da Proposta">
-        <div style={{ display: "flex", gap: 10 }}>
-          <div style={{ flex: 1 }}><FInput value={data.propostaNumero} onChange={e => set("propostaNumero", e.target.value)} placeholder="Ex: 001/2026" /></div>
-          <button onClick={async () => {
-            const newNum = await generateProposalNumber();
-            set("propostaNumero", newNum);
-          }} style={{ 
-            background: "#f1f5f9", 
-            color: "#475569", 
-            border: "1.5px solid #e2e8f0", 
-            borderRadius: 10, 
-            padding: "0 16px", 
-            fontSize: 13, 
-            fontWeight: 700, 
-            cursor: "pointer", 
-            whiteSpace: "nowrap",
-            transition: "all 0.2s"
-          }}>
-            🔄 Gerar
-          </button>
-        </div>
+        <FInput value={data.propostaNumero} onChange={e => set("propostaNumero", e.target.value)} placeholder="Gerado automaticamente ao salvar" />
       </FieldGroup>
 
       <div style={{ display: "grid", gap: 4 }}>

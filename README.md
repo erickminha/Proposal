@@ -15,12 +15,38 @@ Acesse supabase.com → New Project
 create table propostas (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users(id) on delete cascade not null,
+  organization_id uuid not null,
   cliente_nome text,
   proposta_numero text,
   data_proposta date,
   dados jsonb not null,
   created_at timestamp with time zone default now()
 );
+
+create or replace function public.next_proposal_number(org_id uuid)
+returns text
+language plpgsql
+as $$
+declare
+  next_seq integer;
+  current_year text := extract(year from now())::text;
+begin
+  perform pg_advisory_xact_lock(hashtext('propostas:' || org_id::text));
+
+  select coalesce(max(split_part(proposta_numero, '/', 1)::integer), 0) + 1
+    into next_seq
+  from public.propostas
+  where organization_id = org_id
+    and proposta_numero ~ '^\d+/\d{4}$'
+    and split_part(proposta_numero, '/', 2) = current_year;
+
+  return format('%s/%s', next_seq, current_year);
+end;
+$$;
+
+alter table propostas
+  add constraint propostas_organization_id_proposta_numero_key
+  unique (organization_id, proposta_numero);
 
 alter table propostas enable row level security;
 
