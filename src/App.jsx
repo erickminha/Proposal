@@ -316,6 +316,7 @@ export default function App() {
   const autoSaveTimerRef = useRef(null);
   const previewRef = useRef(null);
   const isMobile = useIsMobile();
+  const organizationId = user?.app_metadata?.organization_id || user?.user_metadata?.organization_id || null;
 
   // Check auth on load
   useEffect(() => {
@@ -348,12 +349,15 @@ export default function App() {
   };
 
   const handleSave = async (isAutoSave = false) => {
-    if (!user) return;
+    if (!user || !organizationId) {
+      setSaveMsg("❌ Organização não identificada para salvar a proposta.");
+      return;
+    }
     setSaving(true);
     if (!isAutoSave) setSaveMsg("");
     
     const payload = {
-      user_id: user.id,
+      organization_id: organizationId,
       cliente_nome: data.clienteNome,
       proposta_numero: data.propostaNumero,
       data_proposta: data.propostaData || null,
@@ -365,9 +369,19 @@ export default function App() {
 
     let result;
     if (savedId) {
-      result = await supabase.from("propostas").update(payload).eq("id", savedId).select().single();
+      result = await supabase
+        .from("propostas")
+        .update(payload)
+        .eq("id", savedId)
+        .eq("organization_id", organizationId)
+        .select()
+        .single();
     } else {
-      result = await supabase.from("propostas").insert(payload).select().single();
+      result = await supabase
+        .from("propostas")
+        .insert({ ...payload, user_id: user.id })
+        .select()
+        .single();
     }
     
     setSaving(false);
@@ -381,11 +395,12 @@ export default function App() {
   };
 
   const generateProposalNumber = async () => {
+    if (!organizationId) return "1/" + new Date().getFullYear();
     const currentYear = new Date().getFullYear();
     const { data: pData, error } = await supabase
       .from("propostas")
       .select("proposta_numero")
-      .eq("user_id", user.id)
+      .eq("organization_id", organizationId)
       .like("proposta_numero", `%/${currentYear}`)
       .order("created_at", { ascending: false })
       .limit(1);
