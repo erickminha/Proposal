@@ -3,6 +3,8 @@ import { supabase } from "./supabase";
 
 export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimaria }) {
   const [propostas, setPropostas] = useState([]);
+  const [filteredPropostas, setFilteredPropostas] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -10,6 +12,21 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
     if (!user) return;
     fetchPropostas();
   }, [user]);
+
+  useEffect(() => {
+    // Filtrar propostas sempre que o termo de busca ou a lista original mudar
+    if (!searchTerm.trim()) {
+      setFilteredPropostas(propostas);
+    } else {
+      const term = searchTerm.toLowerCase().trim();
+      const filtered = propostas.filter(proposta => {
+        const clienteNome = proposta.dados?.clienteNome?.toLowerCase() || "";
+        const propostaNumero = proposta.proposta_numero?.toLowerCase() || "";
+        return clienteNome.includes(term) || propostaNumero.includes(term);
+      });
+      setFilteredPropostas(filtered);
+    }
+  }, [searchTerm, propostas]);
 
   const fetchPropostas = async () => {
     try {
@@ -22,6 +39,7 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
 
       if (error) throw error;
       setPropostas(data || []);
+      setFilteredPropostas(data || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -63,12 +81,12 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
       fontFamily: "'Inter', sans-serif",
       padding: "24px"
     }}>
-      {/* Cabeçalho com título e botão de logout */}
+      {/* Cabeçalho com título e botões */}
       <div style={{
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
-        marginBottom: 32,
+        marginBottom: 24,
         flexWrap: "wrap",
         gap: 16
       }}>
@@ -131,6 +149,63 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
         </div>
       </div>
 
+      {/* Barra de pesquisa */}
+      <div style={{
+        marginBottom: 24,
+        background: "white",
+        borderRadius: 12,
+        padding: "4px 16px",
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        border: "1px solid #e2e8f0",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
+      }}>
+        <span style={{ color: "#94a3b8", fontSize: 18 }}>🔍</span>
+        <input
+          type="text"
+          placeholder="Pesquisar por cliente ou número da proposta..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            flex: 1,
+            border: "none",
+            padding: "14px 0",
+            fontSize: 14,
+            outline: "none",
+            background: "transparent"
+          }}
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm("")}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#94a3b8",
+              cursor: "pointer",
+              fontSize: 14,
+              padding: "4px 8px"
+            }}
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Contador de resultados */}
+      {!loading && !error && filteredPropostas.length > 0 && (
+        <div style={{
+          fontSize: 13,
+          color: "#64748b",
+          marginBottom: 16,
+          fontWeight: 500
+        }}>
+          {filteredPropostas.length} {filteredPropostas.length === 1 ? "proposta encontrada" : "propostas encontradas"}
+          {searchTerm && ` para "${searchTerm}"`}
+        </div>
+      )}
+
       {/* Conteúdo da lista */}
       {loading && (
         <div style={{ textAlign: "center", padding: 40, color: "#94a3b8" }}>
@@ -151,7 +226,7 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
         </div>
       )}
 
-      {!loading && !error && propostas.length === 0 && (
+      {!loading && !error && filteredPropostas.length === 0 && (
         <div style={{
           background: "white",
           borderRadius: 16,
@@ -162,32 +237,36 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
         }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
           <h3 style={{ fontSize: 20, fontWeight: 700, color: "#334155", marginBottom: 8 }}>
-            Nenhuma proposta ainda
+            {searchTerm ? "Nenhuma proposta encontrada" : "Nenhuma proposta ainda"}
           </h3>
           <p style={{ marginBottom: 24 }}>
-            Clique em "Nova Proposta" para começar a criar suas propostas comerciais.
+            {searchTerm 
+              ? `Nenhuma proposta corresponde a "${searchTerm}". Tente outro termo.`
+              : "Clique em 'Nova Proposta' para começar a criar suas propostas comerciais."}
           </p>
-          <button
-            onClick={onNew}
-            style={{
-              background: corPrimaria || "#1976D2",
-              color: "white",
-              border: "none",
-              padding: "12px 24px",
-              borderRadius: 8,
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: "pointer"
-            }}
-          >
-            Criar primeira proposta
-          </button>
+          {!searchTerm && (
+            <button
+              onClick={onNew}
+              style={{
+                background: corPrimaria || "#1976D2",
+                color: "white",
+                border: "none",
+                padding: "12px 24px",
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              Criar primeira proposta
+            </button>
+          )}
         </div>
       )}
 
-      {!loading && !error && propostas.length > 0 && (
+      {!loading && !error && filteredPropostas.length > 0 && (
         <div style={{ display: "grid", gap: 16 }}>
-          {propostas.map((proposta) => (
+          {filteredPropostas.map((proposta) => (
             <div
               key={proposta.id}
               onClick={() => onLoad(proposta.dados, proposta.id)}
