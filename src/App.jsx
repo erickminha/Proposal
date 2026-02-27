@@ -624,8 +624,6 @@ export default function App() {
             max-width: 100% !important;
             margin: 0 !important;
             box-shadow: none !important;
-            page-break-inside: avoid;
-            break-inside: avoid;
             page-break-after: always;
             break-after: page;
           }
