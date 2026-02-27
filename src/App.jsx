@@ -1,7 +1,9 @@
-  import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
+import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 
 // ─── DEFAULT DATA ─────────────────────────────────────────────────────────────
 const defaultData = {
@@ -316,6 +318,7 @@ export default function App() {
   const autoSaveTimerRef = useRef(null);
   const previewRef = useRef(null);
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   // Check auth on load
   useEffect(() => {
@@ -331,6 +334,20 @@ export default function App() {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     };
   }, []);
+
+
+  useEffect(() => {
+    if (!user) return;
+
+    const pendingToken = getPendingInviteToken();
+    if (!pendingToken) return;
+
+    acceptInviteForUser({ token: pendingToken, user }).then((result) => {
+      if (!result.ok) return;
+      clearPendingInviteToken();
+      navigate("/", { replace: true });
+    });
+  }, [user, navigate]);
 
   const set = (key, val) => {
     setData(d => ({ ...d, [key]: val }));
