@@ -131,7 +131,7 @@ function FTextarea({ value, onChange, rows = 3 }) {
 function ProposalPage({ data, logoSrc, children }) {
   return (
     <div className="print-page" style={{
-      background: "white", width: "100%", maxWidth: 794, minHeight: 1123, height: "auto",
+      background: "white", width: "100%", maxWidth: 794, minHeight: "297mm", height: "auto",
       boxShadow: "0 10px 25px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column",
       fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
       fontSize: 13,
@@ -617,11 +617,13 @@ export default function App() {
           .print-page {
             width: 210mm !important;
             min-height: 297mm !important;
+            height: auto !important;
             max-width: 100% !important;
             margin: 0 !important;
             box-shadow: none !important;
-            page-break-inside: avoid;
-            break-inside: avoid;
+            overflow: hidden !important;
+            page-break-inside: auto;
+            break-inside: auto;
             page-break-after: always;
             break-after: page;
           }
