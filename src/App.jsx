@@ -401,9 +401,9 @@ export default function App() {
     setScreen("editor");
   };
 
-  const handleLoad = (dados) => {
+  const handleLoad = (dados, id = null) => {
     setData(dados);
-    setSavedId(null);
+    setSavedId(id);
     setSaveMsg("");
     setScreen("editor");
   };

@@ -43,7 +43,7 @@ export default function ProposalList({ user, onNew, onLoad, corPrimaria = "#1976
       .select("dados")
       .eq("id", id)
       .single();
-    if (!error && data) onLoad(data.dados);
+    if (!error && data) onLoad(data.dados, id);
   };
 
   const handleDuplicate = async (id) => {
@@ -54,7 +54,7 @@ export default function ProposalList({ user, onNew, onLoad, corPrimaria = "#1976
       .single();
     if (!error && data) {
       const newData = { ...data.dados, propostaNumero: "" };
-      onLoad(newData);
+      onLoad(newData, null);
     }
   };
 
@@ -76,10 +76,12 @@ export default function ProposalList({ user, onNew, onLoad, corPrimaria = "#1976
     setConfirmDelete(null);
   };
 
-  const filtered = proposals.filter(p =>
-    p.cliente_nome?.toLowerCase().includes(search.toLowerCase()) ||
-    p.proposta_numero?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = proposals.filter(p => {
+    const searchLower = search.toLowerCase();
+    const cliente = (p.cliente_nome || "").toLowerCase();
+    const numero = (p.proposta_numero || "").toLowerCase();
+    return cliente.includes(searchLower) || numero.includes(searchLower);
+  });
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "'Inter', sans-serif" }}>
