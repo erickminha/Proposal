@@ -7,27 +7,69 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const organizationId = user?.app_metadata?.organization_id || user?.user_metadata?.organization_id || null;
+  const [organizationId, setOrganizationId] = useState(null);
 
+  // Buscar organization_id dos metadados ou da tabela profiles
   useEffect(() => {
-    if (!user) return;
+    const fetchOrgId = async () => {
+      if (!user) {
+        setOrganizationId(null);
+        return;
+      }
+
+      // Tenta obter dos metadados primeiro
+      let orgId = user?.app_metadata?.organization_id || user?.user_metadata?.organization_id;
+      if (orgId) {
+        setOrganizationId(orgId);
+        return;
+      }
+
+      // Se não tiver nos metadados, busca da tabela profiles
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("organization_id")
+          .eq("id", user.id)
+          .single();
+
+        if (!error && data?.organization_id) {
+          orgId = data.organization_id;
+          setOrganizationId(orgId);
+          // Atualiza os metadados para evitar nova consulta
+          await supabase.auth.updateUser({
+            data: { organization_id: orgId }
+          });
+        } else {
+          setOrganizationId(null);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar organization_id:", err);
+        setOrganizationId(null);
+      }
+    };
+
+    fetchOrgId();
+  }, [user]);
+
+  // Buscar propostas quando organizationId estiver disponível
+  useEffect(() => {
+    if (!user || !organizationId) return;
     fetchPropostas();
   }, [user, organizationId]);
 
   useEffect(() => {
-    // Filtrar propostas sempre que o termo de busca ou a lista original mudar
     if (!searchTerm.trim()) {
       setFilteredPropostas(propostas);
     } else {
       const term = searchTerm.toLowerCase().trim();
-     const filtered = propostas.filter(proposta => {
-  const clienteNome = proposta.dados?.clienteNome?.toLowerCase() || "";
-  const propostaNumero = proposta.proposta_numero?.toLowerCase() || "";
-  const cnpj = proposta.dados?.clienteCNPJ?.toLowerCase() || "";
-  return clienteNome.includes(term) || 
-         propostaNumero.includes(term) || 
-         cnpj.includes(term);
-});
+      const filtered = propostas.filter(proposta => {
+        const clienteNome = proposta.dados?.clienteNome?.toLowerCase() || "";
+        const propostaNumero = proposta.proposta_numero?.toLowerCase() || "";
+        const cnpj = proposta.dados?.clienteCNPJ?.toLowerCase() || "";
+        return clienteNome.includes(term) || 
+               propostaNumero.includes(term) || 
+               cnpj.includes(term);
+      });
       setFilteredPropostas(filtered);
     }
   }, [searchTerm, propostas]);
@@ -62,7 +104,11 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
     if (!window.confirm("Tem certeza que deseja excluir esta proposta?")) return;
     try {
       if (!organizationId) throw new Error("Organização não identificada para excluir proposta.");
-      const { error } = await supabase.from("propostas").delete().eq("id", id).eq("organization_id", organizationId);
+      const { error } = await supabase
+        .from("propostas")
+        .delete()
+        .eq("id", id)
+        .eq("organization_id", organizationId);
       if (error) throw error;
       setPropostas(propostas.filter(p => p.id !== id));
     } catch (err) {
@@ -175,7 +221,7 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
         <span style={{ color: "#94a3b8", fontSize: 18 }}>🔍</span>
         <input
           type="text"
-          placeholder="Pesquisar por cliente ou número da proposta..."
+          placeholder="Pesquisar por cliente, número ou CNPJ..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
