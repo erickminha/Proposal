@@ -70,40 +70,35 @@ function FieldGroup({ label, children }) {
 
 function FInput({ value, onChange, placeholder, type = "text", mask }) {
   const [isFocused, setIsFocused] = useState(false);
-
   const handleChange = (e) => {
     let val = e.target.value;
     if (mask === "cnpj") {
       val = val.replace(/\D/g, "").slice(0, 14);
-      val = val.replace(/^(\d{2})(\d)/, "$1.$2");
-      val = val.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
-      val = val.replace(/\.(\d{3})(\d)/, ".$1/$2");
-      val = val.replace(/(\d{4})(\d)/, "$1-$2");
+      val = val.replace(/(\d{2})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1.$2").replace(/(\d{3})(\d)/, "$1/$2").replace(/(\d{4})(\d)/, "$1-$2");
     }
-    onChange({ target: { value: val } });
+    onChange({ ...e, target: { ...e.target, value: val } });
   };
-
   return (
-    <input
-      type={type}
-      value={value}
-      onChange={handleChange}
+    <input 
+      type={type} 
+      value={value} 
+      onChange={handleChange} 
       placeholder={placeholder}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
-      style={{
-        width: "100%",
-        border: `1.5px solid ${isFocused ? "#3b82f6" : "#e2e8f0"}`,
-        borderRadius: 8,
-        padding: "12px 14px",
-        fontSize: 14,
-        fontFamily: "inherit",
-        outline: "none",
-        color: "#1e293b",
+      style={{ 
+        width: "100%", 
+        border: `1.5px solid ${isFocused ? "#3b82f6" : "#e2e8f0"}`, 
+        borderRadius: 8, 
+        padding: "12px 14px", 
+        fontSize: 14, 
+        fontFamily: "inherit", 
+        outline: "none", 
+        color: "#1e293b", 
         transition: "all 0.2s ease",
         boxShadow: isFocused ? "0 0 0 3px rgba(59, 130, 246, 0.1)" : "none",
-        boxSizing: "border-box"
-      }}
+        boxSizing: "border-box" 
+      }} 
     />
   );
 }
@@ -111,190 +106,187 @@ function FInput({ value, onChange, placeholder, type = "text", mask }) {
 function FTextarea({ value, onChange, rows = 3 }) {
   const [isFocused, setIsFocused] = useState(false);
   return (
-    <textarea
-      value={value}
-      onChange={onChange}
+    <textarea 
+      value={value} 
+      onChange={onChange} 
       rows={rows}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
-      style={{
-        width: "100%",
-        border: `1.5px solid ${isFocused ? "#3b82f6" : "#e2e8f0"}`,
-        borderRadius: 8,
-        padding: "12px 14px",
-        fontSize: 14,
-        fontFamily: "inherit",
-        outline: "none",
-        color: "#1e293b",
-        resize: "vertical",
+      style={{ 
+        width: "100%", 
+        border: `1.5px solid ${isFocused ? "#3b82f6" : "#e2e8f0"}`, 
+        borderRadius: 8, 
+        padding: "12px 14px", 
+        fontSize: 14, 
+        fontFamily: "inherit", 
+        outline: "none", 
+        color: "#1e293b", 
+        resize: "vertical", 
         transition: "all 0.2s ease",
         boxShadow: isFocused ? "0 0 0 3px rgba(59, 130, 246, 0.1)" : "none",
-        boxSizing: "border-box"
-      }}
+        boxSizing: "border-box" 
+      }} 
     />
   );
 }
 
 // ─── PROPOSAL PAGE WRAPPER ───────────────────────────────────────────────────
-function ProposalPage({ data, logoSrc, children }) {
+function ProposalPage({ data, logoSrc, children, isCapa = false }) {
   return (
     <div className="print-page" style={{
-      background: "white", width: "100%", maxWidth: 794, minHeight: "297mm", height: "auto",
+      background: "white", width: "100%", maxWidth: 794, minHeight: 1123,
       boxShadow: "0 10px 25px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column",
-      fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-      fontSize: 13,
+      fontFamily: "'Inter', sans-serif",
       position: "relative",
-      overflow: "visible"
+      overflow: "hidden",
+      fontSize: "14px"
     }}>
-      <div style={{ height: 10, background: data.corPrimaria }} />
-      <div style={{ padding: "32px 64px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9" }}>
-        {logoSrc
-          ? <img src={logoSrc} style={{ height: 45, objectFit: "contain" }} />
-          : <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: data.corPrimaria, letterSpacing: 2 }}>{data.empresaNome.split(" ")[0]}</div>
-              <div style={{ fontSize: 8, fontWeight: 700, letterSpacing: "0.2em", color: "#64748b" }}>{data.empresaSubtitulo}</div>
+      {!isCapa && <div style={{ height: 10, background: data.corPrimaria }} />}
+      <div style={{ padding: isCapa ? "0" : "24px 64px 12px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: isCapa ? "none" : "1px solid #f1f5f9" }}>
+        {!isCapa && (
+          <>
+            {logoSrc
+              ? <img src={logoSrc} style={{ height: 40, objectFit: "contain" }} />
+              : <div style={{ textAlign: "left" }}>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: data.corPrimaria, letterSpacing: 1 }}>{data.empresaNome.split(" ")[0]}</div>
+                  <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: "0.2em", color: "#64748b" }}>{data.empresaSubtitulo}</div>
+                </div>
+            }
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: "#94a3b8" }}>PROPOSTA COMERCIAL</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: data.corPrimaria }}>{data.propostaNumero || "—"}</div>
             </div>
-        }
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8" }}>PROPOSTA COMERCIAL</div>
-          <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria }}>{data.propostaNumero || "—"}</div>
+          </>
+        )}
+      </div>
+      <div style={{ flex: 1, padding: isCapa ? "0" : "32px 64px", display: "flex", flexDirection: "column" }}>{children}</div>
+      {!isCapa && (
+        <div style={{ background: "#f8fafc", padding: "12px 64px", textAlign: "center", borderTop: "1px solid #f1f5f9" }}>
+          <div style={{ fontSize: 9, color: "#475569", fontWeight: 700 }}>{data.empresaNome}</div>
+          <div style={{ fontSize: 8, color: "#94a3b8", marginTop: 2 }}>{data.empresaEndereco}</div>
         </div>
-      </div>
-      <div style={{ flex: 1, padding: "40px 56px", display: "flex", flexDirection: "column" }}>{children}</div>
-      <div style={{ background: "#f8fafc", padding: "16px 64px", textAlign: "center", borderTop: "1px solid #f1f5f9" }}>
-        <div style={{ fontSize: 11, color: "#475569", fontWeight: 700 }}>{data.empresaNome}</div>
-        <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 2 }}>{data.empresaEndereco}</div>
-      </div>
-      <div style={{ height: 6, background: data.corPrimaria }} />
+      )}
+      {!isCapa && <div style={{ height: 6, background: data.corPrimaria }} />}
     </div>
   );
 }
 
 // ─── PREVIEW (3 pages) ────────────────────────────────────────────────────────
-function PreviewContent({ data, logoSrc, containerRef }) {
+function PreviewContent({ data, logoSrc }) {
   return (
-    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "32px 16px" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32, padding: "32px 16px" }}>
       {/* PAGE 1: CAPA */}
-      <ProposalPage data={data} logoSrc={logoSrc}>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 0 }}>
-          {logoSrc ? <img src={logoSrc} style={{ maxWidth: 280, maxHeight: 180, objectFit: "contain", marginBottom: 24 }} />
-            : <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <div style={{ fontSize: 64, fontWeight: 900, color: data.corPrimaria, letterSpacing: 4 }}>{data.empresaNome.split(" ")[0]}</div>
-                <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: "0.4em", color: "#475569", marginTop: 8 }}>{data.empresaSubtitulo}</div>
+      <ProposalPage data={data} logoSrc={logoSrc} isCapa={true}>
+        <div style={{ height: 12, background: data.corPrimaria, width: "100%" }} />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 64px" }}>
+          {logoSrc ? <img src={logoSrc} style={{ maxWidth: 300, maxHeight: 240, objectFit: "contain", marginBottom: 48 }} />
+            : <div style={{ textAlign: "center", marginBottom: 48 }}>
+                <div style={{ fontSize: 72, fontWeight: 900, color: data.corPrimaria, letterSpacing: 4 }}>{data.empresaNome.split(" ")[0]}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "0.4em", color: "#475569", marginTop: 8 }}>{data.empresaSubtitulo}</div>
               </div>}
+          
+          <div style={{ alignSelf: "stretch", marginTop: 40 }}>
+            <div style={{ background: data.corPrimaria, padding: "48px 64px", borderRadius: "4px 0 0 4px", position: "relative", right: -64 }}>
+              <div style={{ fontSize: 42, fontWeight: 900, color: "white", letterSpacing: 4 }}>PROPOSTA</div>
+              <div style={{ fontSize: 42, fontWeight: 900, color: "white", letterSpacing: 4 }}>COMERCIAL</div>
+            </div>
+            <div style={{ display: "flex", marginTop: 4, gap: 4, justifyContent: "flex-end", position: "relative", right: -64 }}>
+              <div style={{ background: data.corPrimaria, height: 12, width: "30%" }} />
+              <div style={{ background: data.corSecundaria, height: 12, width: "15%" }} />
+            </div>
+          </div>
         </div>
-        <div style={{ alignSelf: "stretch", marginBottom: 44 }}>
-          <div style={{ background: data.corPrimaria, padding: "40px 56px", borderRadius: "4px 0 0 4px", position: "relative", right: -56 }}>
-            <div style={{ fontSize: 36, fontWeight: 900, color: "white", letterSpacing: 4 }}>PROPOSTA</div>
-            <div style={{ fontSize: 36, fontWeight: 900, color: "white", letterSpacing: 4 }}>COMERCIAL</div>
-          </div>
-          <div style={{ background: data.corSecundaria, height: 16, width: "48%", marginLeft: "auto", marginTop: 0, borderRadius: "0 0 0 4px" }} />
-        </div>
-      </ProposalPage>
-
-      {/* PAGE 2: INTRODUÇÃO */}
-      <ProposalPage data={data} logoSrc={logoSrc}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: data.corPrimaria, marginBottom: 20, letterSpacing: 1 }}>APRESENTAÇÃO</div>
-          <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 6, color: "#1e293b" }}>À {data.clienteNome || "—"};</div>
-          <div style={{ height: 2, width: 40, background: data.corSecundaria, marginBottom: 20 }} />
-          
-          {data.introTexto.split("\n\n").map((p, i) => (
-            <p key={i} style={{ fontSize: 13, lineHeight: 1.6, marginBottom: 12, color: "#334155", textAlign: "justify" }}>{p}</p>
-          ))}
-          
-          <div style={{ fontWeight: 800, fontSize: 14, marginTop: 20, marginBottom: 12, color: data.corPrimaria, letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}>
-            <span aria-hidden="true">⭐</span> POR QUE A {data.empresaNome.toUpperCase().split(" ")[0]}?
-          </div>
-          
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-            {data.diferenciais.slice(0, 4).map((d, i) => (
-              <div key={i} style={{ marginBottom: 4 }}>
-                <div style={{ fontWeight: 700, fontSize: 12, color: "#1e293b", marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ color: data.corPrimaria }}>●</span> {d.titulo}
-                </div>
-                <p style={{ fontSize: 11, lineHeight: 1.4, color: "#64748b" }}>{d.descricao}</p>
-              </div>
-            ))}
-          </div>
+        <div style={{ padding: "48px 64px", background: "#f8fafc", borderTop: "1px solid #e2e8f0" }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: data.corPrimaria, marginBottom: 8 }}>PREPARADO PARA:</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: "#0f172a" }}>{data.clienteNome || "Sua Empresa"}</div>
+          <div style={{ fontSize: 12, color: "#64748b", marginTop: 8, fontWeight: 600 }}>Nº {data.propostaNumero || "—"} • {new Date(data.propostaData).toLocaleDateString('pt-BR')}</div>
         </div>
       </ProposalPage>
 
-      {/* PAGE 3: METODOLOGIA E INVESTIMENTO */}
+      {/* PAGE 2: APRESENTAÇÃO E DIFERENCIAIS */}
       <ProposalPage data={data} logoSrc={logoSrc}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: data.corPrimaria, marginBottom: 16, letterSpacing: 1, display: "flex", alignItems: "center", gap: 8 }}>
-            <span aria-hidden="true">📊</span> METODOLOGIA E INVESTIMENTO
-          </div>
-          
-          <div style={{ background: "#f8fafc", padding: 16, borderRadius: 8, marginBottom: 18 }}>
-            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10, color: "#1e293b" }}>Como funciona nosso processo:</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {data.etapas.map((e, i) => (
-                <div key={i} style={{ display: "flex", gap: 8 }}>
-                  <div style={{ background: data.corPrimaria, color: "white", width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, flexShrink: 0 }}>{e.numero}</div>
-                  <div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#1e293b" }}>{e.etapa}</div>
-                    <div style={{ fontSize: 10, color: "#64748b", lineHeight: 1.3 }}>{e.descricao}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: "#1e293b" }}>Tabela de Investimento:</div>
-          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 14, fontSize: 12 }}>
-            <thead>
-              <tr style={{ background: data.corPrimaria }}>
-                <th style={{ color: "white", padding: "8px 12px", textAlign: "left", fontWeight: 700, borderRadius: "6px 0 0 0" }}>Nível da Vaga</th>
-                <th style={{ color: "white", padding: "8px 12px", textAlign: "right", fontWeight: 700, borderRadius: "0 6px 0 0" }}>Investimento</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.niveis.map((n, i) => (
-                <tr key={i} style={{ background: i % 2 === 0 ? "white" : "#f1f5f9" }}>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", color: "#334155" }}>
-                    <span style={{ fontWeight: 700 }}>{n.nivel}</span> <span style={{ fontSize: 10, color: "#64748b" }}>({n.exemplos})</span>
-                  </td>
-                  <td style={{ padding: "8px 12px", borderBottom: "1px solid #e2e8f0", textAlign: "right", fontWeight: 800, color: data.corPrimaria }}>{n.percentual}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, fontSize: 12, marginBottom: 6, color: "#1e293b" }}>Condições Comerciais</div>
-              <div style={{ fontSize: 11, color: "#475569", lineHeight: 1.5 }}>
-                <div>• Pagamento: {data.formaPagamento}</div>
-                <div>• Forma: {data.formaPix}</div>
-                <div>• Validade: {data.propostaValidade}</div>
-              </div>
-            </div>
-            <div style={{ background: "#f1f5f9", padding: "8px 16px", borderRadius: 6, textAlign: "center" }}>
-              <div style={{ fontSize: 10, color: "#64748b", fontWeight: 600 }}>Tributos</div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#1e293b" }}>{data.tributos}</div>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 10, letterSpacing: 1 }}>PRÓXIMOS PASSOS</div>
-            {data.proximosPassos.split("\n\n").map((p, i) => (
-              <p key={i} style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 8, color: "#334155" }}>{p}</p>
-            ))}
-          </div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 20, letterSpacing: 1 }}>01. APRESENTAÇÃO</div>
+        <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, color: "#1e293b" }}>À {data.clienteNome || "—"};</div>
+        <div style={{ height: 2, width: 40, background: data.corSecundaria, marginBottom: 16 }} />
         
-          <div style={{ marginTop: 20, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 40 }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ height: 1, background: "#cbd5e1", marginBottom: 8 }} />
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#1e293b" }}>{data.empresaRazaoSocial}</div>
-              <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>CONTRATADA • CNPJ: {data.empresaCNPJ}</div>
+        {data.introTexto.split("\n\n").map((p, i) => (
+          <p key={i} style={{ fontSize: 14, lineHeight: 1.6, marginBottom: 12, color: "#334155", textAlign: "justify" }}>{p}</p>
+        ))}
+
+        <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginTop: 32, marginBottom: 20, letterSpacing: 1 }}>02. POR QUE A RGA? 🚀</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {data.diferenciais.slice(0, 4).map((d, i) => (
+            <div key={i} style={{ background: "#f8fafc", padding: 16, borderRadius: 8, borderLeft: `3px solid ${data.corPrimaria}` }}>
+              <div style={{ fontWeight: 800, fontSize: 13, color: "#0f172a", marginBottom: 6 }}>{d.titulo}</div>
+              <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.5 }}>{d.descricao}</div>
             </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ height: 1, background: "#cbd5e1", marginBottom: 8 }} />
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#1e293b" }}>{data.clienteNome || "CONTRATANTE"}</div>
-              <div style={{ fontSize: 10, color: "#64748b", marginTop: 2 }}>CONTRATANTE • CNPJ: {data.clienteCNPJ || "—"}</div>
+          ))}
+        </div>
+      </ProposalPage>
+
+      {/* PAGE 3: METODOLOGIA, INVESTIMENTO E FECHAMENTO */}
+      <ProposalPage data={data} logoSrc={logoSrc}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 20, letterSpacing: 1 }}>03. METODOLOGIA 📋</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+          {data.etapas.map((e, i) => (
+            <div key={i} style={{ flex: "1 1 30%", background: "white", border: "1px solid #e2e8f0", padding: 10, borderRadius: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                <div style={{ width: 18, height: 18, background: data.corPrimaria, color: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900 }}>{i+1}</div>
+                <div style={{ fontSize: 11, fontWeight: 800, color: "#0f172a" }}>{e.etapa}</div>
+              </div>
+              <div style={{ fontSize: 10, color: "#64748b", lineHeight: 1.3 }}>{e.descricao}</div>
             </div>
+          ))}
+        </div>
+
+        <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 16, letterSpacing: 1 }}>04. INVESTIMENTO 💰</div>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 20, fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: data.corPrimaria, color: "white" }}>
+              <th style={{ padding: "10px 16px", textAlign: "left", borderRadius: "6px 0 0 0" }}>Nível da Vaga</th>
+              <th style={{ padding: "10px 16px", textAlign: "left" }}>Exemplos</th>
+              <th style={{ padding: "10px 16px", textAlign: "right", borderRadius: "0 6px 0 0" }}>Investimento</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.niveis.map((n, i) => (
+              <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "white" : "#f8fafc" }}>
+                <td style={{ padding: "10px 16px", fontWeight: 700, color: "#1e293b" }}>{n.nivel}</td>
+                <td style={{ padding: "10px 16px", color: "#64748b", fontSize: 11 }}>{n.examples}</td>
+                <td style={{ padding: "10px 16px", textAlign: "right", fontWeight: 800, color: data.corPrimaria }}>{n.percentual}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div style={{ background: "#f1f5f9", padding: 16, borderRadius: 8, marginBottom: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={{ fontSize: 11, color: "#475569" }}>
+            <div style={{ fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>Condições:</div>
+            <div>• Pagamento: {data.formaPagamento}</div>
+            <div>• Tributos: {data.tributos}</div>
+          </div>
+          <div style={{ fontSize: 11, color: "#475569" }}>
+            <div style={{ fontWeight: 700, color: "#1e293b", marginBottom: 4 }}>Validade:</div>
+            <div>{data.propostaValidade}</div>
+            <div>Meio: {data.formaPix}</div>
+          </div>
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: data.corPrimaria, marginBottom: 8 }}>PRÓXIMOS PASSOS</div>
+          <p style={{ fontSize: 12, color: "#475569", lineHeight: 1.5 }}>{data.proximosPassos.split("\n\n")[0]}</p>
+        </div>
+
+        <div style={{ marginTop: 32, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ height: 1, background: "#cbd5e1", marginBottom: 8 }} />
+            <div style={{ fontSize: 11, fontWeight: 800 }}>{data.empresaRazaoSocial}</div>
+            <div style={{ fontSize: 9, color: "#94a3b8" }}>CONTRATADA</div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ height: 1, background: "#cbd5e1", marginBottom: 8 }} />
+            <div style={{ fontSize: 11, fontWeight: 800 }}>{data.clienteNome || "CONTRATANTE"}</div>
+            <div style={{ fontSize: 9, color: "#94a3b8" }}>CONTRATANTE</div>
           </div>
         </div>
       </ProposalPage>
@@ -313,38 +305,28 @@ export default function App() {
   const [logoSrc, setLogoSrc] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
-  const [onboardingError, setOnboardingError] = useState("");
   const [savedId, setSavedId] = useState(null);
-  const [autoSaveEnabled] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
-  const previewRef = useRef(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
   // Check auth on load
   useEffect(() => {
-    const ensureUserOnboarding = async (authUser) => {
-      if (!authUser) {
-        setOnboardingError("");
-        return;
-      }
-      try {
-        await runOnboarding(authUser.user_metadata?.company_name);
-        setOnboardingError("");
-      } catch (error) {
-        setOnboardingError(error.message);
-      }
-    };
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user || null);
-      ensureUserOnboarding(session?.user || null);
       setAuthChecked(true);
+      if (session?.user) {
+        acceptInviteForUser(session.user).then(accepted => {
+          if (accepted) {
+            clearPendingInviteToken();
+          }
+        });
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUser(session?.user || null);
-      ensureUserOnboarding(session?.user || null);
     });
     return () => {
       subscription.unsubscribe();
@@ -352,122 +334,83 @@ export default function App() {
     };
   }, []);
 
-
-  useEffect(() => {
-    if (!user) return;
-
-    const pendingToken = getPendingInviteToken();
-    if (!pendingToken) return;
-
-    acceptInviteForUser({ token: pendingToken, user }).then((result) => {
-      if (!result.ok) return;
-      clearPendingInviteToken();
-      navigate("/", { replace: true });
-    });
-  }, [user, navigate]);
-
-  const autoSaveEnabled = true;
- const handleSaveRef = useRef(null);
-
   const set = (key, val) => {
     setData(d => ({ ...d, [key]: val }));
     if (autoSaveEnabled && savedId) {
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
       autoSaveTimerRef.current = setTimeout(() => {
-        if (handleSaveRef.current) handleSaveRef.current(true);
+        handleSave(true);
       }, 3000);
     }
   };
+
   const handleSaveManual = async () => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     await handleSave();
   };
 
   const handleSave = async (isAutoSave = false) => {
-    const organizationId = user?.user_metadata?.organization_id || user?.app_metadata?.organization_id || user?.id;
-
-    if (!user || !organizationId) {
-      setSaveMsg("❌ Organização não identificada para salvar a proposta.");
-      return;
-    }
+    if (!user) return;
     setSaving(true);
     if (!isAutoSave) setSaveMsg("");
     
     const payload = {
       user_id: user.id,
-      organization_id: organizationId,
       cliente_nome: data.clienteNome,
       proposta_numero: data.propostaNumero,
       data_proposta: data.propostaData || null,
-      dados: {
-        ...data,
-        logoSrc,
-      },
+      dados: data,
+      status: data.status || "Rascunho"
     };
-
-    const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-    const isNumberConflict = (error) => {
-      if (!error) return false;
-      if (error.code !== "23505") return false;
-      return (error.message || "").includes("organization_id") && (error.message || "").includes("proposta_numero");
-    };
-
+    
     let result;
     if (savedId) {
-      result = await supabase
-        .from("propostas")
-        .update(payload)
-        .eq("id", savedId)
-        .eq("organization_id", organizationId)
-        .select()
-        .single();
+      result = await supabase.from("propostas").update(payload).eq("id", savedId).select().single();
     } else {
-      const maxAttempts = 3;
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        const { data: nextNumber, error: numberError } = await supabase.rpc("next_proposal_number", { org_id: organizationId });
-        if (numberError) {
-          result = { error: numberError };
-          break;
-        }
-
-        const createPayload = { ...payload, proposta_numero: nextNumber };
-        result = await supabase.from("propostas").insert(createPayload).select().single();
-
-        if (!result.error) {
-          setData((prev) => ({ ...prev, propostaNumero: nextNumber }));
-          break;
-        }
-
-        if (!isNumberConflict(result.error) || attempt === maxAttempts) break;
-        await wait(150);
-      }
+      result = await supabase.from("propostas").insert(payload).select().single();
     }
     
     setSaving(false);
     if (result.error) {
       setSaveMsg("❌ Erro ao salvar: " + result.error.message);
     } else {
-      if (!savedId) setSavedId(result.data.id);
+      if (!savedId && result.data) setSavedId(result.data.id);
       setSaveMsg(isAutoSave ? "✓ Auto-salvo" : "✅ Proposta Salva!");
       setTimeout(() => setSaveMsg(""), 3000);
     }
   };
 
-  // Mantém a ref sempre atualizada com a versão mais recente de handleSave
-  handleSaveRef.current = handleSave;
+  const generateProposalNumber = async () => {
+    const currentYear = new Date().getFullYear();
+    const { data: pData, error } = await supabase
+      .from("propostas")
+      .select("proposta_numero")
+      .eq("user_id", user.id)
+      .like("proposta_numero", `%/${currentYear}`)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    
+    let nextNumber = 1;
+    if (!error && pData && pData.length > 0) {
+      const lastNumber = pData[0].proposta_numero;
+      const match = lastNumber.match(/(\d+)\/(\d+)/);
+      if (match) {
+        nextNumber = parseInt(match[1]) + 1;
+      }
+    }
+    return `${nextNumber}/${currentYear}`;
+  };
 
   const handleNew = async () => {
-    setData({ ...defaultData, propostaNumero: "" });
-    setLogoSrc(null);
+    const newProposalNumber = await generateProposalNumber();
+    setData({ ...defaultData, propostaNumero: newProposalNumber });
     setSavedId(null);
     setSaveMsg("");
     setScreen("editor");
   };
 
   const handleLoad = (dados, id = null) => {
-    const { logoSrc: savedLogo, ...restData } = dados;
-    setData(restData);
-    setLogoSrc(savedLogo || null);
+    setData(dados);
     setSavedId(id);
     setSaveMsg("");
     setScreen("editor");
@@ -515,69 +458,32 @@ export default function App() {
   if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("list"); }} />;
 
   if (screen === "list") return (
-    <>
-      {onboardingError && (
-        <div style={{ background: "#fff3cd", color: "#7a5b00", border: "1px solid #ffe08a", borderRadius: 10, padding: "12px 16px", margin: "16px 24px 0", fontSize: 14, fontWeight: 600 }}>
-          ⚠️ {onboardingError}
-          <button
-            onClick={async () => {
-              try {
-                await runOnboarding(user?.user_metadata?.company_name);
-                setOnboardingError("");
-              } catch (error) {
-                setOnboardingError(error.message);
-              }
-            }}
-            style={{ marginLeft: 10, background: "transparent", border: "1px solid #d4b106", color: "#7a5b00", borderRadius: 6, padding: "6px 10px", cursor: "pointer", fontWeight: 700 }}
-          >
-            Tentar novamente
-          </button>
-        </div>
-      )}
-      <ProposalList
-        user={user}
-        onNew={handleNew}
-        onLoad={handleLoad}
-        onSignOut={handleSignOut}
-        corPrimaria={data.corPrimaria}
-      />
-    </>
+    <ProposalList
+      user={user}
+      onNew={handleNew}
+      onLoad={handleLoad}
+      corPrimaria={data.corPrimaria}
+    />
   );
 
   // ── EDITOR SCREEN ──
-
-  const handleExportDoc = () => {
-    if (!previewRef.current) return;
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Proposta</title><style>body{margin:0;background:#fff;} .print-page{page-break-after:always;} .print-page:last-child{page-break-after:auto;}</style></head><body>${previewRef.current.innerHTML}</body></html>`;
-    const blob = new Blob(["﻿", html], { type: "application/msword" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const fileName = `proposta-${(data.propostaNumero || data.clienteNome || "rga").toString().replace(/\s+/g, "-").toLowerCase()}.doc`;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
-
   const formContent = (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ display: "flex", borderBottom: "1px solid #e2e8f0", overflowX: "auto", background: "white", WebkitOverflowScrolling: "touch", padding: "0 8px" }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{
-              padding: "16px 16px",
-              border: "none",
-              background: "none",
-              fontSize: 12,
-              fontWeight: 700,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
-              color: tab === t.id ? data.corPrimaria : "#64748b",
-              borderBottom: `3px solid ${tab === t.id ? data.corPrimaria : "transparent"}`,
+            style={{ 
+              padding: "16px 16px", 
+              border: "none", 
+              background: "none", 
+              fontSize: 12, 
+              fontWeight: 700, 
+              cursor: "pointer", 
+              whiteSpace: "nowrap", 
+              color: tab === t.id ? data.corPrimaria : "#64748b", 
+              borderBottom: `3px solid ${tab === t.id ? data.corPrimaria : "transparent"}`, 
               transition: "all 0.2s ease",
-              flexShrink: 0
+              flexShrink: 0 
             }}>
             {t.label}
           </button>
@@ -619,19 +525,20 @@ export default function App() {
         {tab === "cliente" && <div>
           <div style={{ fontWeight: 800, fontSize: 16, color: "#1e293b", marginBottom: 24 }}>Dados do Cliente</div>
           <FieldGroup label="Nº da Proposta">
-            <FInput value={data.propostaNumero} onChange={e => set("propostaNumero", e.target.value)} placeholder="Gerado automaticamente ao salvar" />
+            <div style={{ display: "flex", gap: 8 }}>
+              <FInput value={data.propostaNumero} onChange={e => set("propostaNumero", e.target.value)} />
+              <button onClick={async () => {
+                const newNum = await generateProposalNumber();
+                set("propostaNumero", newNum);
+              }} style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", borderRadius: 8, padding: "0 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                🔄 Gerar
+              </button>
+            </div>
           </FieldGroup>
           {[["clienteNome","Nome do Cliente / Empresa"],["propostaValidade","Validade da Proposta"]].map(([k,l]) => (
             <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} /></FieldGroup>
           ))}
-          <FieldGroup label="CNPJ do Cliente">
-            <FInput
-              value={data.clienteCNPJ}
-              onChange={e => set("clienteCNPJ", e.target.value)}
-              mask="cnpj"
-              placeholder="00.000.000/0001-00"
-            />
-          </FieldGroup>
+          <FieldGroup label="CNPJ do Cliente"><FInput value={data.clienteCNPJ} onChange={e => set("clienteCNPJ", e.target.value)} mask="cnpj" placeholder="00.000.000/0001-00" /></FieldGroup>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <FieldGroup label="Data da Proposta"><FInput type="date" value={data.propostaData} onChange={e => set("propostaData", e.target.value)} /></FieldGroup>
             <FieldGroup label="Status Atual">
@@ -696,40 +603,9 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @media print {
-          @page { 
-            size: A4 portrait; 
-            margin: 0; 
-          }
-          .no-print { 
-            display: none !important; 
-          }
-          html, body { 
-            background: white; 
-            margin: 0; 
-            padding: 0; 
-            width: 210mm;
-            height: 297mm;
-          }
-          body { 
-            -webkit-print-color-adjust: exact; 
-            print-color-adjust: exact; 
-          }
-          .print-page {
-            width: 210mm !important;
-            height: 297mm !important;
-            max-height: 297mm !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            box-shadow: none !important;
-            overflow: hidden !important;
-            page-break-after: always;
-            page-break-inside: avoid;
-            break-inside: avoid;
-          }
-          .print-page:last-child {
-            page-break-after: auto;
-            break-after: auto;
-          }
+          .no-print { display: none !important; }
+          body { background: white; margin: 0; }
+          .print-page { page-break-after: always; box-shadow: none !important; max-width: 100% !important; margin: 0 !important; }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -757,10 +633,10 @@ export default function App() {
         
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {saveMsg && (
-            <div style={{
-              fontSize: 12,
-              color: saveMsg.includes("❌") ? "#ef4444" : "#10b981",
-              fontWeight: 700,
+            <div style={{ 
+              fontSize: 12, 
+              color: saveMsg.includes("❌") ? "#ef4444" : "#10b981", 
+              fontWeight: 700, 
               background: saveMsg.includes("❌") ? "#fef2f2" : "#ecfdf5",
               padding: "6px 12px",
               borderRadius: 20,
@@ -771,14 +647,14 @@ export default function App() {
           )}
           
           <button onClick={handleSaveManual} disabled={saving}
-            style={{
-              background: data.corPrimaria,
-              color: "white",
-              border: "none",
-              padding: "10px 20px",
-              borderRadius: 8,
-              cursor: saving ? "not-allowed" : "pointer",
-              fontSize: 13,
+            style={{ 
+              background: data.corPrimaria, 
+              color: "white", 
+              border: "none", 
+              padding: "10px 20px", 
+              borderRadius: 8, 
+              cursor: saving ? "not-allowed" : "pointer", 
+              fontSize: 13, 
               fontWeight: 700,
               boxShadow: `0 4px 12px ${data.corPrimaria}33`,
               display: "flex",
@@ -792,12 +668,7 @@ export default function App() {
 
           <button onClick={() => window.print()}
             style={{ background: "white", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-            🖨️ {!isMobile && "Imprimir / Salvar PDF"}
-          </button>
-
-          <button onClick={handleExportDoc}
-            style={{ background: "#f8fafc", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-            📝 {!isMobile && "Baixar DOC"}
+            🖨️ {!isMobile && "Gerar PDF"}
           </button>
 
           {isMobile && (
@@ -819,7 +690,7 @@ export default function App() {
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {mobileScreen === "form"
             ? <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>{formContent}</div>
-            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}><PreviewContent data={data} logoSrc={logoSrc} containerRef={previewRef} /></div>
+            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}><PreviewContent data={data} logoSrc={logoSrc} /></div>
           }
         </div>
       ) : (
@@ -828,7 +699,7 @@ export default function App() {
             {formContent}
           </div>
           <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "48px 0" }}>
-            <PreviewContent data={data} logoSrc={logoSrc} containerRef={previewRef} />
+            <PreviewContent data={data} logoSrc={logoSrc} />
           </div>
         </div>
       )}
