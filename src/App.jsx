@@ -307,6 +307,8 @@ export default function App() {
   const [saveMsg, setSaveMsg] = useState("");
   const [savedId, setSavedId] = useState(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [organization, setOrganization] = useState(null);
+  const [organizationLoading, setOrganizationLoading] = useState(false);
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
   const isMobile = useIsMobile();
@@ -356,6 +358,7 @@ export default function App() {
     
     const payload = {
       user_id: user.id,
+      organization_id: organization?.id || null,
       cliente_nome: data.clienteNome,
       proposta_numero: data.propostaNumero,
       data_proposta: data.propostaData || null,
@@ -417,9 +420,16 @@ export default function App() {
   };
 
   const handleSignOut = async () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     await supabase.auth.signOut();
     setUser(null);
+    setOrganization(null);
+    setData({ ...defaultData });
+    setSavedId(null);
+    setLogoSrc(null);
+    setTab("empresa");
     setScreen("list");
+    navigate("/");
   };
 
   const updateDiferencial = (i, field, val) => set("diferenciais", data.diferenciais.map((d, idx) => idx === i ? { ...d, [field]: val } : d));
@@ -438,8 +448,34 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
+  const loadOrganization = async () => {
+    if (!user) return;
+    setOrganizationLoading(true);
+    const { data, error } = await supabase.from("user_profiles").select("organization_id").eq("id", user.id).single();
+    if (!error && data?.organization_id) {
+      const { data: orgData } = await supabase.from("organizations").select("*").eq("id", data.organization_id).single();
+      if (orgData) {
+        setOrganization(orgData);
+        setData(prev => ({ ...prev, empresaNome: orgData.name || prev.empresaNome, empresaCNPJ: orgData.cnpj || prev.empresaCNPJ, empresaEndereco: orgData.endereco || prev.empresaEndereco, empresaRazaoSocial: orgData.razao_social || prev.empresaRazaoSocial, corPrimaria: orgData.cor_primaria || prev.corPrimaria, corSecundaria: orgData.cor_secundaria || prev.corSecundaria }));
+      }
+    }
+    setOrganizationLoading(false);
+  };
+
+  const saveOrganization = async () => {
+    if (!user || !organization?.id) return;
+    setSaving(true);
+    const payload = { name: data.empresaNome, cnpj: data.empresaCNPJ, endereco: data.empresaEndereco, razao_social: data.empresaRazaoSocial, cor_primaria: data.corPrimaria, cor_secundaria: data.corSecundaria };
+    const { error } = await supabase.from("organizations").update(payload).eq("id", organization.id);
+    setSaving(false);
+    if (error) { setSaveMsg("Erro ao salvar: " + error.message); } else { setSaveMsg("Organização Atualizada!"); setTimeout(() => setSaveMsg(""), 3000); }
+  };
+
+  useEffect(() => { if (user && !organization) { loadOrganization(); } }, [user]);
+
   const tabs = [
-    { id: "empresa", label: "🏢 Empresa" },
+    { id: "organizacao", label: "🏢 Minha Empresa" },
+    { id: "empresa", label: "📋 Template" },
     { id: "cliente", label: "👤 Cliente" },
     { id: "diferenciais", label: "✅ Diferenciais" },
     { id: "etapas", label: "📋 Etapas" },
@@ -490,6 +526,34 @@ export default function App() {
         ))}
       </div>
       <div style={{ padding: 24, overflowY: "auto", flex: 1, background: "white" }}>
+
+
+        {tab === "organizacao" && <div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: "#1e293b", marginBottom: 24 }}>Dados da Minha Empresa</div>
+          <div style={{ background: "#ecfdf5", border: "1px solid #86efac", borderRadius: 8, padding: 12, marginBottom: 20, fontSize: 13, color: "#166534" }}>
+            Estes dados sao compartilhados em todas as suas propostas.
+          </div>
+          {[["empresaNome","Nome da Empresa"],["empresaCNPJ","CNPJ"],["empresaEndereco","Endereco"],["empresaRazaoSocial","Razao Social"]].map(([k,l]) => (
+            <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} mask={k === "empresaCNPJ" ? "cnpj" : undefined} /></FieldGroup>
+          ))}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <FieldGroup label="Cor Principal">
+              <div style={{ display: "flex", gap: 8 }}>
+                <input type="color" value={data.corPrimaria} onChange={e => set("corPrimaria", e.target.value)} style={{ width: 44, height: 44, border: "1px solid #e2e8f0", borderRadius: 8, padding: 4, cursor: "pointer", background: "white" }} />
+                <FInput value={data.corPrimaria} onChange={e => set("corPrimaria", e.target.value)} />
+              </div>
+            </FieldGroup>
+            <FieldGroup label="Cor Secundaria">
+              <div style={{ display: "flex", gap: 8 }}>
+                <input type="color" value={data.corSecundaria} onChange={e => set("corSecundaria", e.target.value)} style={{ width: 44, height: 44, border: "1px solid #e2e8f0", borderRadius: 8, padding: 4, cursor: "pointer", background: "white" }} />
+                <FInput value={data.corSecundaria} onChange={e => set("corSecundaria", e.target.value)} />
+              </div>
+            </FieldGroup>
+          </div>
+          <button onClick={saveOrganization} disabled={saving} style={{ marginTop: 24, background: data.corPrimaria, color: "white", border: "none", padding: "12px 24px", borderRadius: 8, cursor: saving ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 700, width: "100%" }}>
+            {saving ? "Salvando..." : "Salvar Dados da Empresa"}
+          </button>
+        </div>}
 
         {tab === "empresa" && <div>
           <div style={{ fontWeight: 800, fontSize: 16, color: "#1e293b", marginBottom: 24 }}>Dados da Empresa</div>
