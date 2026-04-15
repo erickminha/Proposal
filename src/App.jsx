@@ -653,6 +653,8 @@ export default function App() {
       user={user}
       onNew={handleNew}
       onLoad={handleLoad}
+      onBack={() => setScreen("hub")}
+      onOpenCandidates={() => {}}
       onNewJobAd={() => setScreen("jobAd")}
       onSignOut={handleSignOut}
       corPrimaria={data.corPrimaria}
