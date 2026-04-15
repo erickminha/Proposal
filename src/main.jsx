@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import App from './App.jsx'
 import AcceptInvite from './AcceptInvite.jsx'
-import CandidatePage from './CandidatePage.jsx'
+import PublicApplication from './PublicApplication.jsx'
 import PublicHome from './PublicHome.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
