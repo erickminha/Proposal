@@ -46,6 +46,12 @@ const defaultData = {
   formaPagamento: "Na aprovação do candidato (fechamento da vaga)",
   formaPix: "PIX ou boleto",
   proximosPassos: "Estamos prontos para começar. Basta confirmar as vagas que você deseja preencher e nós colocamos em ação nossa metodologia comprovada.\n\nSeu próximo grande talento está a apenas 7 dias de distância.\n\nAguardamos seu retorno para iniciarmos essa parceria de sucesso.",
+  generatedArtMetadata: [],
+};
+
+const exportResolutionOptions = {
+  web: { label: "Web (rápido)", scale: 1 },
+  high: { label: "Alta qualidade (tráfego pago)", scale: 2 },
 };
 
 // ─── HOOKS ────────────────────────────────────────────────────────────────────
@@ -295,11 +301,112 @@ function PreviewContent({ data, logoSrc }) {
   );
 }
 
+function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 4) {
+  const words = (text || "").split(" ");
+  const lines = [];
+  let line = "";
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (ctx.measureText(candidate).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  if (line) lines.push(line);
+
+  const clippedLines = lines.slice(0, maxLines);
+  clippedLines.forEach((currentLine, index) => {
+    ctx.fillText(currentLine, x, y + index * lineHeight);
+  });
+  if (lines.length > maxLines) {
+    const lastLine = clippedLines[maxLines - 1];
+    const ellipsized = `${lastLine.replace(/\s+\S*$/, "")}…`;
+    ctx.fillText(ellipsized, x, y + (maxLines - 1) * lineHeight);
+  }
+}
+
+async function loadImageElement(src) {
+  if (!src) return null;
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+async function renderAdCanvas({ data, logoSrc, format, scale }) {
+  const baseWidth = 1080;
+  const baseHeight = format === "story" ? 1920 : 1080;
+  const width = baseWidth * scale;
+  const height = baseHeight * scale;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+
+  const gradient = ctx.createLinearGradient(0, 0, baseWidth, baseHeight);
+  gradient.addColorStop(0, data.corPrimaria);
+  gradient.addColorStop(1, data.corSecundaria || "#0f172a");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+  ctx.fillStyle = "rgba(15, 23, 42, 0.35)";
+  ctx.fillRect(0, 0, baseWidth, baseHeight);
+
+  const logo = await loadImageElement(logoSrc);
+  if (logo) {
+    const maxLogoWidth = 260;
+    const logoRatio = logo.width / logo.height;
+    const logoWidth = Math.min(maxLogoWidth, logo.width);
+    const logoHeight = logoWidth / logoRatio;
+    ctx.drawImage(logo, 80, 80, logoWidth, logoHeight);
+  } else {
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "700 34px Inter, sans-serif";
+    ctx.fillText(data.empresaNome || "Sua Empresa", 80, 120);
+  }
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "900 88px Inter, sans-serif";
+  ctx.fillText("PROPOSTA", 80, format === "story" ? 560 : 420);
+  ctx.fillText("COMERCIAL", 80, format === "story" ? 655 : 515);
+
+  ctx.fillStyle = "rgba(255,255,255,0.15)";
+  const cardY = format === "story" ? 820 : 610;
+  const cardHeight = format === "story" ? 760 : 380;
+  ctx.fillRect(80, cardY, baseWidth - 160, cardHeight);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "700 32px Inter, sans-serif";
+  ctx.fillText(`Cliente: ${data.clienteNome || "Sua Empresa"}`, 120, cardY + 82);
+
+  ctx.font = "500 32px Inter, sans-serif";
+  wrapCanvasText(
+    ctx,
+    data.introTexto?.split("\n\n")?.[0] || "",
+    120,
+    cardY + 150,
+    baseWidth - 240,
+    46,
+    format === "story" ? 8 : 4
+  );
+
+  ctx.font = "700 28px Inter, sans-serif";
+  ctx.fillText(`Proposta Nº ${data.propostaNumero || "—"}`, 120, cardY + cardHeight - 74);
+
+  return { canvas, baseWidth, baseHeight };
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [screen, setScreen] = useState("list"); // "list" | "editor"
+  const [screen, setScreen] = useState("list"); // "list" | "candidates" | "editor"
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
@@ -311,6 +418,8 @@ export default function App() {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [organization, setOrganization] = useState(null);
   const [organizationLoading, setOrganizationLoading] = useState(false);
+  const [exportResolution, setExportResolution] = useState("web");
+  const [exportingImage, setExportingImage] = useState(false);
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
   const isMobile = useIsMobile();
@@ -417,7 +526,7 @@ export default function App() {
   };
 
   const handleLoad = (dados, id = null) => {
-    setData(dados);
+    setData({ ...defaultData, ...dados, generatedArtMetadata: Array.isArray(dados?.generatedArtMetadata) ? dados.generatedArtMetadata : [] });
     setSavedId(id);
     setLastSavedAt(null);
     setSaveMsg("");
@@ -436,6 +545,73 @@ export default function App() {
     setTab("empresa");
     setScreen("list");
     navigate("/");
+  };
+
+  const saveGeneratedArtMetadata = async (metadata) => {
+    const nextMetadata = [
+      metadata,
+      ...(Array.isArray(data.generatedArtMetadata) ? data.generatedArtMetadata : []),
+    ].slice(0, 20);
+
+    const nextData = { ...data, generatedArtMetadata: nextMetadata };
+    setData(nextData);
+
+    if (!savedId || !user) return;
+    const { error } = await supabase
+      .from("propostas")
+      .update({
+        dados: nextData,
+        status: data.status || "Rascunho",
+        cliente_nome: data.clienteNome,
+        proposta_numero: data.propostaNumero,
+      })
+      .eq("id", savedId);
+
+    if (error) {
+      setSaveMsg("❌ Erro ao salvar metadata da arte");
+      return;
+    }
+    setLastSavedAt(new Date());
+  };
+
+  const handleDownloadJpg = async (format) => {
+    try {
+      setExportingImage(true);
+      const selectedResolution = exportResolutionOptions[exportResolution] || exportResolutionOptions.web;
+      const { canvas, baseWidth, baseHeight } = await renderAdCanvas({
+        data,
+        logoSrc,
+        format,
+        scale: selectedResolution.scale,
+      });
+      const quality = 0.92;
+      const fileName = `${(data.clienteNome || "anuncio").replace(/\s+/g, "-").toLowerCase()}-${format}-${exportResolution}.jpg`;
+      const href = canvas.toDataURL("image/jpeg", quality);
+      const link = document.createElement("a");
+      link.href = href;
+      link.download = fileName;
+      link.click();
+
+      const metadata = {
+        id: typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        createdAt: new Date().toISOString(),
+        format: "jpg",
+        layout: format,
+        resolutionPreset: exportResolution,
+        width: baseWidth * selectedResolution.scale,
+        height: baseHeight * selectedResolution.scale,
+        quality,
+        fileName,
+      };
+      await saveGeneratedArtMetadata(metadata);
+      setSaveMsg("✅ JPG gerado com sucesso!");
+      setTimeout(() => setSaveMsg(""), 3000);
+    } catch (error) {
+      console.error(error);
+      setSaveMsg("❌ Falha ao gerar JPG.");
+    } finally {
+      setExportingImage(false);
+    }
   };
 
   const updateDiferencial = (i, field, val) => set("diferenciais", data.diferenciais.map((d, idx) => idx === i ? { ...d, [field]: val } : d));
@@ -534,6 +710,15 @@ export default function App() {
         corPrimaria={data.corPrimaria}
       />
     </AppShell>
+  );
+
+  if (screen === "candidates") return (
+    <CandidateList
+      user={user}
+      corPrimaria={data.corPrimaria}
+      onBackToProposals={() => setScreen("list")}
+      onSignOut={handleSignOut}
+    />
   );
 
   // ── EDITOR SCREEN ──
@@ -649,6 +834,25 @@ export default function App() {
           {[["empresaNome","Nome da Empresa"],["empresaSubtitulo","Subtítulo"],["empresaEndereco","Endereço"],["empresaCNPJ","CNPJ"],["empresaRazaoSocial","Razão Social (assinatura)"]].map(([k,l]) => (
             <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} /></FieldGroup>
           ))}
+          <div style={{ marginTop: 24, border: "1px solid #e2e8f0", borderRadius: 10, background: "#f8fafc", padding: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", marginBottom: 8 }}>Histórico de artes geradas</div>
+            {(data.generatedArtMetadata || []).length === 0 ? (
+              <div style={{ fontSize: 12, color: "#64748b" }}>Nenhuma arte gerada ainda. Exporte JPG para iniciar o histórico.</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {data.generatedArtMetadata.slice(0, 5).map((item) => (
+                  <div key={item.id || item.createdAt} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
+                    <div style={{ fontSize: 12, color: "#334155", fontWeight: 600 }}>
+                      {item.fileName || "arquivo.jpg"} • {item.width}x{item.height}
+                    </div>
+                    <div style={{ fontSize: 11, color: "#64748b" }}>
+                      {item.createdAt ? new Date(item.createdAt).toLocaleString("pt-BR") : ""}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <FieldGroup label="Cor Principal">
               <div style={{ display: "flex", gap: 8 }}>
