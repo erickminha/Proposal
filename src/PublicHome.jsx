@@ -42,7 +42,7 @@ export default function PublicHome() {
 
           <div style={{ marginTop: 24, display: "flex", flexWrap: "wrap", gap: 12 }}>
             <Link
-              to="/portal"
+              to="/candidatura"
               style={{ textDecoration: "none", background: "white", color: "#1d4ed8", padding: "12px 18px", borderRadius: 10, fontWeight: 800 }}
             >
               Cadastrar Currículo
