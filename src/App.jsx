@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
-import AppShell from "./AppShell";
+import ModuleHub from "./ModuleHub";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 import { runOnboarding } from "./onboarding";
 
@@ -406,7 +406,8 @@ async function renderAdCanvas({ data, logoSrc, format, scale }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [screen, setScreen] = useState("list"); // "list" | "candidates" | "editor"
+  const [screen, setScreen] = useState("hub"); // "hub" | "list" | "editor"
+  const [userRole, setUserRole] = useState("recruiter");
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
@@ -543,75 +544,14 @@ export default function App() {
     setLastSavedAt(null);
     setLogoSrc(null);
     setTab("empresa");
-    setScreen("list");
+    setUserRole("recruiter");
+    setScreen("hub");
     navigate("/");
   };
 
-  const saveGeneratedArtMetadata = async (metadata) => {
-    const nextMetadata = [
-      metadata,
-      ...(Array.isArray(data.generatedArtMetadata) ? data.generatedArtMetadata : []),
-    ].slice(0, 20);
-
-    const nextData = { ...data, generatedArtMetadata: nextMetadata };
-    setData(nextData);
-
-    if (!savedId || !user) return;
-    const { error } = await supabase
-      .from("propostas")
-      .update({
-        dados: nextData,
-        status: data.status || "Rascunho",
-        cliente_nome: data.clienteNome,
-        proposta_numero: data.propostaNumero,
-      })
-      .eq("id", savedId);
-
-    if (error) {
-      setSaveMsg("❌ Erro ao salvar metadata da arte");
-      return;
-    }
-    setLastSavedAt(new Date());
-  };
-
-  const handleDownloadJpg = async (format) => {
-    try {
-      setExportingImage(true);
-      const selectedResolution = exportResolutionOptions[exportResolution] || exportResolutionOptions.web;
-      const { canvas, baseWidth, baseHeight } = await renderAdCanvas({
-        data,
-        logoSrc,
-        format,
-        scale: selectedResolution.scale,
-      });
-      const quality = 0.92;
-      const fileName = `${(data.clienteNome || "anuncio").replace(/\s+/g, "-").toLowerCase()}-${format}-${exportResolution}.jpg`;
-      const href = canvas.toDataURL("image/jpeg", quality);
-      const link = document.createElement("a");
-      link.href = href;
-      link.download = fileName;
-      link.click();
-
-      const metadata = {
-        id: typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        createdAt: new Date().toISOString(),
-        format: "jpg",
-        layout: format,
-        resolutionPreset: exportResolution,
-        width: baseWidth * selectedResolution.scale,
-        height: baseHeight * selectedResolution.scale,
-        quality,
-        fileName,
-      };
-      await saveGeneratedArtMetadata(metadata);
-      setSaveMsg("✅ JPG gerado com sucesso!");
-      setTimeout(() => setSaveMsg(""), 3000);
-    } catch (error) {
-      console.error(error);
-      setSaveMsg("❌ Falha ao gerar JPG.");
-    } finally {
-      setExportingImage(false);
-    }
+  const resolveUiRole = (role) => {
+    if (role === "owner" || role === "admin") return role;
+    return "recruiter";
   };
 
   const updateDiferencial = (i, field, val) => set("diferenciais", data.diferenciais.map((d, idx) => idx === i ? { ...d, [field]: val } : d));
@@ -633,9 +573,13 @@ export default function App() {
   const loadOrganization = async () => {
     if (!user) return;
     setOrganizationLoading(true);
-    const { data, error } = await supabase.from("profiles").select("organization_id").eq("id", user.id).single();
+    const { data, error } = await supabase.from("profiles").select("organization_id, role").eq("id", user.id).single();
     if (error) {
       console.error("Erro ao carregar profile:", error);
+    }
+
+    if (!error) {
+      setUserRole(resolveUiRole(data?.role));
     }
 
     if (!error && data?.organization_id) {
@@ -693,23 +637,34 @@ export default function App() {
     </div>
   );
 
-  if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("list"); }} />;
+  if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("hub"); }} />;
+
+  const handleOpenModule = (moduleId) => {
+    if (moduleId === "propostas") {
+      setScreen("list");
+      return;
+    }
+    window.alert("Este módulo será disponibilizado em breve.");
+  };
+
+  if (screen === "hub") return (
+    <ModuleHub
+      user={user}
+      role={userRole}
+      onOpenModule={handleOpenModule}
+      onSignOut={handleSignOut}
+    />
+  );
 
   if (screen === "list") return (
-    <AppShell
-      moduleName="Gestão de Propostas"
-      breadcrumb={["Hub", "Propostas"]}
-      onBackToHub={() => navigate("/")}
-      userEmail={user?.email}
-    >
-      <ProposalList
-        user={user}
-        onNew={handleNew}
-        onLoad={handleLoad}
-        onSignOut={handleSignOut}
-        corPrimaria={data.corPrimaria}
-      />
-    </AppShell>
+    <ProposalList
+      user={user}
+      onNew={handleNew}
+      onLoad={handleLoad}
+      onBack={() => setScreen("hub")}
+      onSignOut={handleSignOut}
+      corPrimaria={data.corPrimaria}
+    />
   );
 
   if (screen === "candidates") return (
