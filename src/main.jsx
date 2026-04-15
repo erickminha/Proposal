@@ -1,18 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom/client'
-import {
-  BrowserRouter,
-  Link,
-  Navigate,
-  Outlet,
-  Route,
-  Routes,
-  useLocation,
-  useNavigate,
-} from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import App from './App.jsx'
 import AcceptInvite from './AcceptInvite.jsx'
-import PublicApplication from './PublicApplication.jsx'
+import CandidatePage from './CandidatePage.jsx'
+import PublicHome from './PublicHome.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -21,7 +13,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/" element={<PublicHome />} />
         <Route path="/portal" element={<App />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />
-        <Route path="/candidatura" element={<PublicApplication />} />
+        <Route path="/candidatura" element={<CandidatePage />} />
+        <Route path="/trabalhe-conosco" element={<Navigate to="/candidatura" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
