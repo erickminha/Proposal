@@ -82,6 +82,10 @@ begin
 end $$;
 
 -- RPC de onboarding agora retorna organization_id (compatível com src/onboarding.js)
+-- A assinatura já existia com retorno void em migrações anteriores, então removemos
+-- explicitamente antes de recriar com retorno uuid.
+drop function if exists public.complete_onboarding(text);
+
 create or replace function public.complete_onboarding(p_company_name text default null)
 returns uuid
 language plpgsql
