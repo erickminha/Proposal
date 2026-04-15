@@ -138,9 +138,9 @@ function FTextarea({ value, onChange, rows = 3 }) {
 }
 
 // ─── PROPOSAL PAGE WRAPPER ───────────────────────────────────────────────────
-function ProposalPage({ data, logoSrc, children, isCapa = false }) {
+function ProposalPage({ data, logoSrc, children, isCapa = false, showSignature = false }) {
   return (
-    <div className="print-page" style={{
+    <div className={`print-page ${isCapa ? "print-page-cover" : ""}`} style={{
       background: "white", width: "100%", maxWidth: 794, minHeight: 1123,
       boxShadow: "0 10px 25px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column",
       fontFamily: "'Inter', sans-serif",
@@ -168,9 +168,16 @@ function ProposalPage({ data, logoSrc, children, isCapa = false }) {
       </div>
       <div style={{ flex: 1, padding: isCapa ? "0" : "32px 64px", display: "flex", flexDirection: "column" }}>{children}</div>
       {!isCapa && (
-        <div style={{ background: "#f8fafc", padding: "12px 64px", textAlign: "center", borderTop: "1px solid #f1f5f9" }}>
-          <div style={{ fontSize: 9, color: "#475569", fontWeight: 700 }}>{data.empresaNome}</div>
+        <div className="print-footer" style={{ background: "#f8fafc", padding: "12px 64px", textAlign: "center", borderTop: "1px solid #f1f5f9" }}>
+          <div style={{ fontSize: 9, color: "#0f172a", fontWeight: 800 }}>RGA Consultoria de RH</div>
+          <div style={{ fontSize: 8, color: "#475569", marginTop: 2, fontWeight: 700 }}>{data.empresaNome}</div>
           <div style={{ fontSize: 8, color: "#94a3b8", marginTop: 2 }}>{data.empresaEndereco}</div>
+          {showSignature && (
+            <div className="print-signature" style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed #cbd5e1" }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: "#1e293b" }}>RGA Consultoria de RH</div>
+              <div style={{ fontSize: 8, color: "#64748b", marginTop: 2 }}>Assinatura digital de proposta</div>
+            </div>
+          )}
         </div>
       )}
       {!isCapa && <div style={{ height: 6, background: data.corPrimaria }} />}
@@ -211,7 +218,7 @@ function PreviewContent({ data, logoSrc }) {
       </ProposalPage>
 
       {/* PAGE 2: APRESENTAÇÃO E DIFERENCIAIS */}
-      <ProposalPage data={data} logoSrc={logoSrc}>
+      <ProposalPage data={data} logoSrc={logoSrc} showSignature={true}>
         <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 20, letterSpacing: 1 }}>01. APRESENTAÇÃO</div>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, color: "#1e293b" }}>À {data.clienteNome || "—"};</div>
         <div style={{ height: 2, width: 40, background: data.corSecundaria, marginBottom: 16 }} />
@@ -301,105 +308,58 @@ function PreviewContent({ data, logoSrc }) {
   );
 }
 
-function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 4) {
-  const words = (text || "").split(" ");
-  const lines = [];
-  let line = "";
-  for (const word of words) {
-    const candidate = line ? `${line} ${word}` : word;
-    if (ctx.measureText(candidate).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = candidate;
-    }
-  }
-  if (line) lines.push(line);
+function CompactPreviewContent({ data, logoSrc }) {
+  return (
+    <div className="preview-content compact-preview" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, padding: "32px 16px" }}>
+      <ProposalPage data={data} logoSrc={logoSrc} showSignature={true}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: data.corPrimaria, letterSpacing: 1 }}>PARECER COMERCIAL</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: "#0f172a", marginTop: 6 }}>{data.clienteNome || "Cliente"}</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+              Nº {data.propostaNumero || "—"} • {new Date(data.propostaData).toLocaleDateString('pt-BR')}
+            </div>
+          </div>
+          {logoSrc && <img src={logoSrc} style={{ height: 46, maxWidth: 170, objectFit: "contain" }} />}
+        </div>
 
-  const clippedLines = lines.slice(0, maxLines);
-  clippedLines.forEach((currentLine, index) => {
-    ctx.fillText(currentLine, x, y + index * lineHeight);
-  });
-  if (lines.length > maxLines) {
-    const lastLine = clippedLines[maxLines - 1];
-    const ellipsized = `${lastLine.replace(/\s+\S*$/, "")}…`;
-    ctx.fillText(ellipsized, x, y + (maxLines - 1) * lineHeight);
-  }
-}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
+            <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700 }}>Prazo de entrega</div>
+            <div style={{ fontSize: 13, color: "#0f172a", fontWeight: 800, marginTop: 3 }}>Até 7 dias úteis</div>
+          </div>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
+            <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700 }}>Garantia</div>
+            <div style={{ fontSize: 13, color: "#0f172a", fontWeight: 800, marginTop: 3 }}>Reposição em 30 dias</div>
+          </div>
+        </div>
 
-async function loadImageElement(src) {
-  if (!src) return null;
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
-}
+        <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 8 }}>Resumo da solução</div>
+        <p style={{ fontSize: 12, lineHeight: 1.5, color: "#334155", marginBottom: 14 }}>
+          {data.introTexto.split("\n\n")[0]}
+        </p>
 
-async function renderAdCanvas({ data, logoSrc, format, scale }) {
-  const baseWidth = 1080;
-  const baseHeight = format === "story" ? 1920 : 1080;
-  const width = baseWidth * scale;
-  const height = baseHeight * scale;
+        <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 8 }}>Investimento por nível</div>
+        <div style={{ display: "grid", gap: 6, marginBottom: 14 }}>
+          {data.niveis.map((n, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", fontSize: 11 }}>
+              <div>
+                <div style={{ fontWeight: 800, color: "#0f172a" }}>{n.nivel}</div>
+                <div style={{ color: "#64748b", marginTop: 2 }}>{n.exemplos}</div>
+              </div>
+              <div style={{ alignSelf: "center", fontWeight: 900, color: data.corPrimaria }}>{n.percentual}</div>
+            </div>
+          ))}
+        </div>
 
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(scale, scale);
-
-  const gradient = ctx.createLinearGradient(0, 0, baseWidth, baseHeight);
-  gradient.addColorStop(0, data.corPrimaria);
-  gradient.addColorStop(1, data.corSecundaria || "#0f172a");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, baseWidth, baseHeight);
-
-  ctx.fillStyle = "rgba(15, 23, 42, 0.35)";
-  ctx.fillRect(0, 0, baseWidth, baseHeight);
-
-  const logo = await loadImageElement(logoSrc);
-  if (logo) {
-    const maxLogoWidth = 260;
-    const logoRatio = logo.width / logo.height;
-    const logoWidth = Math.min(maxLogoWidth, logo.width);
-    const logoHeight = logoWidth / logoRatio;
-    ctx.drawImage(logo, 80, 80, logoWidth, logoHeight);
-  } else {
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "700 34px Inter, sans-serif";
-    ctx.fillText(data.empresaNome || "Sua Empresa", 80, 120);
-  }
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "900 88px Inter, sans-serif";
-  ctx.fillText("PROPOSTA", 80, format === "story" ? 560 : 420);
-  ctx.fillText("COMERCIAL", 80, format === "story" ? 655 : 515);
-
-  ctx.fillStyle = "rgba(255,255,255,0.15)";
-  const cardY = format === "story" ? 820 : 610;
-  const cardHeight = format === "story" ? 760 : 380;
-  ctx.fillRect(80, cardY, baseWidth - 160, cardHeight);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "700 32px Inter, sans-serif";
-  ctx.fillText(`Cliente: ${data.clienteNome || "Sua Empresa"}`, 120, cardY + 82);
-
-  ctx.font = "500 32px Inter, sans-serif";
-  wrapCanvasText(
-    ctx,
-    data.introTexto?.split("\n\n")?.[0] || "",
-    120,
-    cardY + 150,
-    baseWidth - 240,
-    46,
-    format === "story" ? 8 : 4
+        <div style={{ fontSize: 11, color: "#475569", lineHeight: 1.45, marginTop: "auto" }}>
+          <div><strong>Condições:</strong> {data.formaPagamento}</div>
+          <div><strong>Tributos:</strong> {data.tributos}</div>
+          <div><strong>Validade:</strong> {data.propostaValidade}</div>
+        </div>
+      </ProposalPage>
+    </div>
   );
-
-  ctx.font = "700 28px Inter, sans-serif";
-  ctx.fillText(`Proposta Nº ${data.propostaNumero || "—"}`, 120, cardY + cardHeight - 74);
-
-  return { canvas, baseWidth, baseHeight };
 }
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
@@ -418,8 +378,7 @@ export default function App() {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [organization, setOrganization] = useState(null);
   const [organizationLoading, setOrganizationLoading] = useState(false);
-  const [exportResolution, setExportResolution] = useState("web");
-  const [exportingImage, setExportingImage] = useState(false);
+  const [previewMode, setPreviewMode] = useState("completa"); // "completa" | "compacta"
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
   const isMobile = useIsMobile();
@@ -1018,6 +977,20 @@ export default function App() {
             break-after: page;
             overflow: hidden !important;
           }
+          .print-page-cover {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+          }
+          .print-footer {
+            background: #eff6ff !important;
+            border-top: 2px solid #dbeafe !important;
+          }
+          .print-signature {
+            display: block !important;
+          }
+          .compact-preview .print-page {
+            min-height: 297mm !important;
+            height: 297mm !important;
+          }
           .print-page:last-child {
             page-break-after: auto;
             break-after: auto;
@@ -1030,7 +1003,185 @@ export default function App() {
         .spinner { width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-      {editorBody}
-    </AppShell>
+
+      {/* TOP BAR */}
+      <div className="no-print" style={{ background: "white", color: "#1e293b", padding: isMobile ? "12px 16px" : "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", zIndex: 100 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <button onClick={() => setScreen("list")}
+            style={{ background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}>
+            ← <span style={{ display: isMobile ? "none" : "inline" }}>Voltar</span>
+          </button>
+          <div style={{ height: 24, width: 1, background: "#e2e8f0" }} />
+          <div>
+            <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 16, color: "#0f172a" }}>
+              {data.clienteNome || "Nova Proposta"}
+            </div>
+            {!isMobile && (
+              <div style={{ fontSize: 11, color: "#64748b", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>{data.propostaNumero ? `Nº ${data.propostaNumero}` : "Rascunho em edição"}</span>
+                <span style={{ color: "#cbd5e1" }}>•</span>
+                <span style={{ color: completionRate === 100 ? "#059669" : "#475569", fontWeight: 700 }}>
+                  {completionRate}% completo
+                </span>
+                {lastSavedAt && (
+                  <>
+                    <span style={{ color: "#cbd5e1" }}>•</span>
+                    <span>Último salvamento {lastSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {!isMobile && (
+            <button
+              onClick={() => setAutoSaveEnabled(prev => !prev)}
+              style={{
+                background: autoSaveEnabled ? "#ecfdf5" : "#f8fafc",
+                color: autoSaveEnabled ? "#047857" : "#475569",
+                border: `1px solid ${autoSaveEnabled ? "#86efac" : "#e2e8f0"}`,
+                padding: "8px 12px",
+                borderRadius: 999,
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 700
+              }}
+            >
+              {autoSaveEnabled ? "Auto-save ON" : "Auto-save OFF"}
+            </button>
+          )}
+          {saveMsg && (
+            <div style={{ 
+              fontSize: 12, 
+              color: saveMsg.includes("❌") ? "#ef4444" : "#10b981", 
+              fontWeight: 700, 
+              background: saveMsg.includes("❌") ? "#fef2f2" : "#ecfdf5",
+              padding: "6px 12px",
+              borderRadius: 20,
+              display: isMobile && !saveMsg.includes("✅") ? "none" : "block"
+            }}>
+              {saveMsg}
+            </div>
+          )}
+          
+          <button onClick={handleSaveManual} disabled={saving}
+            style={{ 
+              background: data.corPrimaria, 
+              color: "white", 
+              border: "none", 
+              padding: "10px 20px", 
+              borderRadius: 8, 
+              cursor: saving ? "not-allowed" : "pointer", 
+              fontSize: 13, 
+              fontWeight: 700,
+              boxShadow: `0 4px 12px ${data.corPrimaria}33`,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              transition: "all 0.2s"
+            }}>
+            {saving ? <div className="spinner" style={{ borderTopColor: "white" }} /> : "💾"}
+            {!isMobile && (saving ? "Salvando..." : "Salvar")}
+          </button>
+
+          <select
+            value={exportResolution}
+            onChange={(e) => setExportResolution(e.target.value)}
+            style={{
+              background: "white",
+              border: "1px solid #e2e8f0",
+              padding: "10px 12px",
+              borderRadius: 8,
+              fontSize: 12,
+              color: "#1e293b",
+              fontWeight: 600,
+              cursor: "pointer",
+              maxWidth: isMobile ? 130 : "none",
+            }}
+          >
+            {Object.entries(exportResolutionOptions).map(([value, option]) => (
+              <option key={value} value={value}>{option.label}</option>
+            ))}
+          </select>
+
+          <button
+            onClick={() => handleDownloadJpg("square")}
+            disabled={exportingImage}
+            style={{ background: "white", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: exportingImage ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}
+          >
+            🖼️ {!isMobile && "JPG 1080x1080"}
+          </button>
+
+          <button
+            onClick={() => handleDownloadJpg("story")}
+            disabled={exportingImage}
+            style={{ background: "white", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: exportingImage ? "not-allowed" : "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}
+          >
+            📱 {!isMobile && "JPG 1080x1920"}
+          </button>
+
+          <button onClick={() => window.print()}
+            style={{ background: "white", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+            🖨️ {!isMobile && "Gerar PDF"}
+          </button>
+          <button
+            onClick={() => setPreviewMode(prev => prev === "completa" ? "compacta" : "completa")}
+            style={{
+              background: previewMode === "compacta" ? "#eff6ff" : "white",
+              color: previewMode === "compacta" ? "#1d4ed8" : "#1e293b",
+              border: `1px solid ${previewMode === "compacta" ? "#bfdbfe" : "#e2e8f0"}`,
+              padding: "10px 16px",
+              borderRadius: 8,
+              cursor: "pointer",
+              fontSize: 13,
+              fontWeight: 700
+            }}
+          >
+            {previewMode === "compacta" ? "📄 Compacta ON" : "📄 Compacta"}
+          </button>
+
+          {isMobile && (
+            <button onClick={() => setMobileScreen(mobileScreen === "form" ? "preview" : "form")}
+              style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "10px", borderRadius: 8, cursor: "pointer" }}>
+              {mobileScreen === "form" ? "👁️" : "✎"}
+            </button>
+          )}
+          
+          <button onClick={handleSignOut} title="Sair"
+            style={{ background: "transparent", color: "#94a3b8", border: "none", padding: "8px", cursor: "pointer", fontSize: 18 }}>
+            🚪
+          </button>
+        </div>
+      </div>
+
+      {/* BODY */}
+      {isMobile ? (
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          {mobileScreen === "form"
+            ? <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>{formContent}</div>
+            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}>
+                {previewMode === "compacta"
+                  ? <CompactPreviewContent data={data} logoSrc={logoSrc} />
+                  : <PreviewContent data={data} logoSrc={logoSrc} />
+                }
+              </div>
+          }
+        </div>
+      ) : (
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <div className="no-print" style={{ width: 400, minWidth: 400, background: "white", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {formContent}
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "48px 0" }}>
+            {previewMode === "compacta"
+              ? <CompactPreviewContent data={data} logoSrc={logoSrc} />
+              : <PreviewContent data={data} logoSrc={logoSrc} />
+            }
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
