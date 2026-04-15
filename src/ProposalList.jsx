@@ -131,6 +131,12 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
     }
   };
 
+  const statusSummary = filteredPropostas.reduce((acc, proposta) => {
+    const status = proposta.status || "Rascunho";
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -250,6 +256,17 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
         )}
       </div>
 
+      {!loading && !error && filteredPropostas.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 18 }}>
+          {["Rascunho", "Enviada", "Aceita", "Recusada"].map((status) => (
+            <div key={status} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#64748b" }}>{status}</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: getStatusColor(status), marginTop: 2 }}>{statusSummary[status] || 0}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Contador de resultados */}
       {!loading && !error && filteredPropostas.length > 0 && (
         <div style={{
@@ -260,6 +277,35 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
         }}>
           {filteredPropostas.length} {filteredPropostas.length === 1 ? "proposta encontrada" : "propostas encontradas"}
           {searchTerm && ` para "${searchTerm}"`}
+        </div>
+      )}
+
+      {!loading && !error && filteredPropostas.length === 0 && (
+        <div style={{ background: "white", border: "1px dashed #cbd5e1", borderRadius: 14, padding: "40px 20px", textAlign: "center", color: "#64748b" }}>
+          <div style={{ fontSize: 32, marginBottom: 8 }}>🧾</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", marginBottom: 6 }}>
+            {searchTerm ? "Nenhuma proposta encontrada" : "Você ainda não criou propostas"}
+          </div>
+          <div style={{ fontSize: 14, marginBottom: 16 }}>
+            {searchTerm ? "Tente pesquisar por outro cliente, número ou CNPJ." : "Comece criando sua primeira proposta comercial com um clique."}
+          </div>
+          {!searchTerm && (
+            <button
+              onClick={onNew}
+              style={{
+                background: corPrimaria || "#1976D2",
+                color: "white",
+                border: "none",
+                padding: "10px 16px",
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              ➕ Criar primeira proposta
+            </button>
+          )}
         </div>
       )}
 
@@ -280,44 +326,6 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
           marginBottom: 24
         }}>
           ❌ Erro: {error}
-        </div>
-      )}
-
-      {!loading && !error && filteredPropostas.length === 0 && (
-        <div style={{
-          background: "white",
-          borderRadius: 16,
-          padding: 60,
-          textAlign: "center",
-          color: "#94a3b8",
-          border: "2px dashed #e2e8f0"
-        }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>📄</div>
-          <h3 style={{ fontSize: 20, fontWeight: 700, color: "#334155", marginBottom: 8 }}>
-            {searchTerm ? "Nenhuma proposta encontrada" : "Nenhuma proposta ainda"}
-          </h3>
-          <p style={{ marginBottom: 24 }}>
-            {searchTerm 
-              ? `Nenhuma proposta corresponde a "${searchTerm}". Tente outro termo.`
-              : "Clique em 'Nova Proposta' para começar a criar suas propostas comerciais."}
-          </p>
-          {!searchTerm && (
-            <button
-              onClick={onNew}
-              style={{
-                background: corPrimaria || "#1976D2",
-                color: "white",
-                border: "none",
-                padding: "12px 24px",
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 700,
-                cursor: "pointer"
-              }}
-            >
-              Criar primeira proposta
-            </button>
-          )}
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
@@ -252,7 +252,7 @@ function PreviewContent({ data, logoSrc }) {
             {data.niveis.map((n, i) => (
               <tr key={i} style={{ borderBottom: "1px solid #f1f5f9", background: i % 2 === 0 ? "white" : "#f8fafc" }}>
                 <td style={{ padding: "10px 16px", fontWeight: 700, color: "#1e293b" }}>{n.nivel}</td>
-                <td style={{ padding: "10px 16px", color: "#64748b", fontSize: 11 }}>{n.examples}</td>
+                <td style={{ padding: "10px 16px", color: "#64748b", fontSize: 11 }}>{n.exemplos}</td>
                 <td style={{ padding: "10px 16px", textAlign: "right", fontWeight: 800, color: data.corPrimaria }}>{n.percentual}</td>
               </tr>
             ))}
@@ -305,6 +305,7 @@ export default function App() {
   const [logoSrc, setLogoSrc] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [lastSavedAt, setLastSavedAt] = useState(null);
   const [savedId, setSavedId] = useState(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [organization, setOrganization] = useState(null);
@@ -378,6 +379,7 @@ export default function App() {
       setSaveMsg("❌ Erro ao salvar: " + result.error.message);
     } else {
       if (!savedId && result.data) setSavedId(result.data.id);
+      setLastSavedAt(new Date());
       setSaveMsg(isAutoSave ? "✓ Auto-salvo" : "✅ Proposta Salva!");
       setTimeout(() => setSaveMsg(""), 3000);
     }
@@ -408,6 +410,7 @@ export default function App() {
     const newProposalNumber = await generateProposalNumber();
     setData({ ...defaultData, propostaNumero: newProposalNumber });
     setSavedId(null);
+    setLastSavedAt(null);
     setSaveMsg("");
     setScreen("editor");
   };
@@ -415,6 +418,7 @@ export default function App() {
   const handleLoad = (dados, id = null) => {
     setData(dados);
     setSavedId(id);
+    setLastSavedAt(null);
     setSaveMsg("");
     setScreen("editor");
   };
@@ -426,6 +430,7 @@ export default function App() {
     setOrganization(null);
     setData({ ...defaultData });
     setSavedId(null);
+    setLastSavedAt(null);
     setLogoSrc(null);
     setTab("empresa");
     setScreen("list");
@@ -486,6 +491,22 @@ export default function App() {
     { id: "investimento", label: "💰 Investimento" },
   ];
 
+  const completionChecklist = useMemo(() => ([
+    { key: "empresaNome", label: "Nome da empresa", tab: "empresa" },
+    { key: "empresaCNPJ", label: "CNPJ da empresa", tab: "empresa" },
+    { key: "clienteNome", label: "Nome do cliente", tab: "cliente" },
+    { key: "clienteCNPJ", label: "CNPJ do cliente", tab: "cliente" },
+    { key: "propostaNumero", label: "Número da proposta", tab: "cliente" },
+    { key: "introTexto", label: "Texto de abertura", tab: "cliente" },
+    { key: "proximosPassos", label: "Próximos passos", tab: "cliente" },
+  ]), []);
+
+  const missingChecklistItems = completionChecklist.filter(item => {
+    const value = data[item.key];
+    return !String(value || "").trim();
+  });
+  const completionRate = Math.round(((completionChecklist.length - missingChecklistItems.length) / completionChecklist.length) * 100);
+
   // ── Render ──
   if (!authChecked) return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
@@ -530,7 +551,52 @@ export default function App() {
         ))}
       </div>
       <div style={{ padding: 24, overflowY: "auto", flex: 1, background: "white" }}>
-
+        <div style={{
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
+          borderRadius: 12,
+          padding: 14,
+          marginBottom: 20
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#0f172a", letterSpacing: "0.02em" }}>Checklist de qualidade da proposta</div>
+            <div style={{ fontSize: 12, color: missingChecklistItems.length === 0 ? "#059669" : "#64748b", fontWeight: 700 }}>
+              {completionRate}% completo
+            </div>
+          </div>
+          <div style={{ width: "100%", height: 8, background: "#e2e8f0", borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
+            <div style={{ width: `${completionRate}%`, height: "100%", background: completionRate === 100 ? "#10b981" : data.corPrimaria, transition: "width 0.25s ease" }} />
+          </div>
+          {missingChecklistItems.length > 0 ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              {missingChecklistItems.slice(0, 3).map(item => (
+                <button
+                  key={item.key}
+                  onClick={() => setTab(item.tab)}
+                  style={{
+                    border: "1px solid #fecaca",
+                    background: "#fff1f2",
+                    color: "#be123c",
+                    borderRadius: 999,
+                    padding: "4px 10px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: "pointer"
+                  }}
+                >
+                  Falta: {item.label}
+                </button>
+              ))}
+              {missingChecklistItems.length > 3 && (
+                <span style={{ fontSize: 11, color: "#64748b", alignSelf: "center" }}>
+                  +{missingChecklistItems.length - 3} pendências
+                </span>
+              )}
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: "#047857", fontWeight: 700 }}>Tudo pronto para envio ✅</div>
+          )}
+        </div>
 
         {tab === "organizacao" && <div>
           <div style={{ fontWeight: 800, fontSize: 16, color: "#1e293b", marginBottom: 24 }}>Dados da Minha Empresa</div>
@@ -695,11 +761,42 @@ export default function App() {
             <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 16, color: "#0f172a" }}>
               {data.clienteNome || "Nova Proposta"}
             </div>
-            {!isMobile && <div style={{ fontSize: 11, color: "#64748b", fontWeight: 500 }}>{data.propostaNumero ? `Nº ${data.propostaNumero}` : "Rascunho em edição"}</div>}
+            {!isMobile && (
+              <div style={{ fontSize: 11, color: "#64748b", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>{data.propostaNumero ? `Nº ${data.propostaNumero}` : "Rascunho em edição"}</span>
+                <span style={{ color: "#cbd5e1" }}>•</span>
+                <span style={{ color: completionRate === 100 ? "#059669" : "#475569", fontWeight: 700 }}>
+                  {completionRate}% completo
+                </span>
+                {lastSavedAt && (
+                  <>
+                    <span style={{ color: "#cbd5e1" }}>•</span>
+                    <span>Último salvamento {lastSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
         
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {!isMobile && (
+            <button
+              onClick={() => setAutoSaveEnabled(prev => !prev)}
+              style={{
+                background: autoSaveEnabled ? "#ecfdf5" : "#f8fafc",
+                color: autoSaveEnabled ? "#047857" : "#475569",
+                border: `1px solid ${autoSaveEnabled ? "#86efac" : "#e2e8f0"}`,
+                padding: "8px 12px",
+                borderRadius: 999,
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 700
+              }}
+            >
+              {autoSaveEnabled ? "Auto-save ON" : "Auto-save OFF"}
+            </button>
+          )}
           {saveMsg && (
             <div style={{ 
               fontSize: 12, 
