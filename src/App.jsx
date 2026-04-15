@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
+import CandidateList from "./CandidateList";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 import { runOnboarding } from "./onboarding";
 
@@ -298,7 +299,7 @@ function PreviewContent({ data, logoSrc }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [screen, setScreen] = useState("list"); // "list" | "editor"
+  const [screen, setScreen] = useState("list"); // "list" | "candidates" | "editor"
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
@@ -523,7 +524,18 @@ export default function App() {
       user={user}
       onNew={handleNew}
       onLoad={handleLoad}
+      onSignOut={handleSignOut}
+      onOpenCandidates={() => setScreen("candidates")}
       corPrimaria={data.corPrimaria}
+    />
+  );
+
+  if (screen === "candidates") return (
+    <CandidateList
+      user={user}
+      corPrimaria={data.corPrimaria}
+      onBackToProposals={() => setScreen("list")}
+      onSignOut={handleSignOut}
     />
   );
 
