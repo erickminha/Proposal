@@ -140,9 +140,9 @@ function FTextarea({ value, onChange, rows = 3 }) {
 }
 
 // ─── PROPOSAL PAGE WRAPPER ───────────────────────────────────────────────────
-function ProposalPage({ data, logoSrc, children, isCapa = false }) {
+function ProposalPage({ data, logoSrc, children, isCapa = false, showSignature = false }) {
   return (
-    <div className="print-page" style={{
+    <div className={`print-page ${isCapa ? "print-page-cover" : ""}`} style={{
       background: "white", width: "100%", maxWidth: 794, minHeight: 1123,
       boxShadow: "0 10px 25px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column",
       fontFamily: "'Inter', sans-serif",
@@ -170,9 +170,16 @@ function ProposalPage({ data, logoSrc, children, isCapa = false }) {
       </div>
       <div style={{ flex: 1, padding: isCapa ? "0" : "32px 64px", display: "flex", flexDirection: "column" }}>{children}</div>
       {!isCapa && (
-        <div style={{ background: "#f8fafc", padding: "12px 64px", textAlign: "center", borderTop: "1px solid #f1f5f9" }}>
-          <div style={{ fontSize: 9, color: "#475569", fontWeight: 700 }}>{data.empresaNome}</div>
+        <div className="print-footer" style={{ background: "#f8fafc", padding: "12px 64px", textAlign: "center", borderTop: "1px solid #f1f5f9" }}>
+          <div style={{ fontSize: 9, color: "#0f172a", fontWeight: 800 }}>RGA Consultoria de RH</div>
+          <div style={{ fontSize: 8, color: "#475569", marginTop: 2, fontWeight: 700 }}>{data.empresaNome}</div>
           <div style={{ fontSize: 8, color: "#94a3b8", marginTop: 2 }}>{data.empresaEndereco}</div>
+          {showSignature && (
+            <div className="print-signature" style={{ marginTop: 10, paddingTop: 8, borderTop: "1px dashed #cbd5e1" }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: "#1e293b" }}>RGA Consultoria de RH</div>
+              <div style={{ fontSize: 8, color: "#64748b", marginTop: 2 }}>Assinatura digital de proposta</div>
+            </div>
+          )}
         </div>
       )}
       {!isCapa && <div style={{ height: 6, background: data.corPrimaria }} />}
@@ -213,7 +220,7 @@ function PreviewContent({ data, logoSrc, publicApplicationUrl, publicApplication
       </ProposalPage>
 
       {/* PAGE 2: APRESENTAÇÃO E DIFERENCIAIS */}
-      <ProposalPage data={data} logoSrc={logoSrc}>
+      <ProposalPage data={data} logoSrc={logoSrc} showSignature={true}>
         <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 20, letterSpacing: 1 }}>01. APRESENTAÇÃO</div>
         <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 8, color: "#1e293b" }}>À {data.clienteNome || "—"};</div>
         <div style={{ height: 2, width: 40, background: data.corSecundaria, marginBottom: 16 }} />
@@ -314,105 +321,58 @@ function PreviewContent({ data, logoSrc, publicApplicationUrl, publicApplication
   );
 }
 
-function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight, maxLines = 4) {
-  const words = (text || "").split(" ");
-  const lines = [];
-  let line = "";
-  for (const word of words) {
-    const candidate = line ? `${line} ${word}` : word;
-    if (ctx.measureText(candidate).width > maxWidth && line) {
-      lines.push(line);
-      line = word;
-    } else {
-      line = candidate;
-    }
-  }
-  if (line) lines.push(line);
+function CompactPreviewContent({ data, logoSrc }) {
+  return (
+    <div className="preview-content compact-preview" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, padding: "32px 16px" }}>
+      <ProposalPage data={data} logoSrc={logoSrc} showSignature={true}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: data.corPrimaria, letterSpacing: 1 }}>PARECER COMERCIAL</div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: "#0f172a", marginTop: 6 }}>{data.clienteNome || "Cliente"}</div>
+            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
+              Nº {data.propostaNumero || "—"} • {new Date(data.propostaData).toLocaleDateString('pt-BR')}
+            </div>
+          </div>
+          {logoSrc && <img src={logoSrc} style={{ height: 46, maxWidth: 170, objectFit: "contain" }} />}
+        </div>
 
-  const clippedLines = lines.slice(0, maxLines);
-  clippedLines.forEach((currentLine, index) => {
-    ctx.fillText(currentLine, x, y + index * lineHeight);
-  });
-  if (lines.length > maxLines) {
-    const lastLine = clippedLines[maxLines - 1];
-    const ellipsized = `${lastLine.replace(/\s+\S*$/, "")}…`;
-    ctx.fillText(ellipsized, x, y + (maxLines - 1) * lineHeight);
-  }
-}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
+            <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700 }}>Prazo de entrega</div>
+            <div style={{ fontSize: 13, color: "#0f172a", fontWeight: 800, marginTop: 3 }}>Até 7 dias úteis</div>
+          </div>
+          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
+            <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700 }}>Garantia</div>
+            <div style={{ fontSize: 13, color: "#0f172a", fontWeight: 800, marginTop: 3 }}>Reposição em 30 dias</div>
+          </div>
+        </div>
 
-async function loadImageElement(src) {
-  if (!src) return null;
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = src;
-  });
-}
+        <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 8 }}>Resumo da solução</div>
+        <p style={{ fontSize: 12, lineHeight: 1.5, color: "#334155", marginBottom: 14 }}>
+          {data.introTexto.split("\n\n")[0]}
+        </p>
 
-async function renderAdCanvas({ data, logoSrc, format, scale }) {
-  const baseWidth = 1080;
-  const baseHeight = format === "story" ? 1920 : 1080;
-  const width = baseWidth * scale;
-  const height = baseHeight * scale;
+        <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 8 }}>Investimento por nível</div>
+        <div style={{ display: "grid", gap: 6, marginBottom: 14 }}>
+          {data.niveis.map((n, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", fontSize: 11 }}>
+              <div>
+                <div style={{ fontWeight: 800, color: "#0f172a" }}>{n.nivel}</div>
+                <div style={{ color: "#64748b", marginTop: 2 }}>{n.exemplos}</div>
+              </div>
+              <div style={{ alignSelf: "center", fontWeight: 900, color: data.corPrimaria }}>{n.percentual}</div>
+            </div>
+          ))}
+        </div>
 
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  ctx.scale(scale, scale);
-
-  const gradient = ctx.createLinearGradient(0, 0, baseWidth, baseHeight);
-  gradient.addColorStop(0, data.corPrimaria);
-  gradient.addColorStop(1, data.corSecundaria || "#0f172a");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, baseWidth, baseHeight);
-
-  ctx.fillStyle = "rgba(15, 23, 42, 0.35)";
-  ctx.fillRect(0, 0, baseWidth, baseHeight);
-
-  const logo = await loadImageElement(logoSrc);
-  if (logo) {
-    const maxLogoWidth = 260;
-    const logoRatio = logo.width / logo.height;
-    const logoWidth = Math.min(maxLogoWidth, logo.width);
-    const logoHeight = logoWidth / logoRatio;
-    ctx.drawImage(logo, 80, 80, logoWidth, logoHeight);
-  } else {
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "700 34px Inter, sans-serif";
-    ctx.fillText(data.empresaNome || "Sua Empresa", 80, 120);
-  }
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "900 88px Inter, sans-serif";
-  ctx.fillText("PROPOSTA", 80, format === "story" ? 560 : 420);
-  ctx.fillText("COMERCIAL", 80, format === "story" ? 655 : 515);
-
-  ctx.fillStyle = "rgba(255,255,255,0.15)";
-  const cardY = format === "story" ? 820 : 610;
-  const cardHeight = format === "story" ? 760 : 380;
-  ctx.fillRect(80, cardY, baseWidth - 160, cardHeight);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "700 32px Inter, sans-serif";
-  ctx.fillText(`Cliente: ${data.clienteNome || "Sua Empresa"}`, 120, cardY + 82);
-
-  ctx.font = "500 32px Inter, sans-serif";
-  wrapCanvasText(
-    ctx,
-    data.introTexto?.split("\n\n")?.[0] || "",
-    120,
-    cardY + 150,
-    baseWidth - 240,
-    46,
-    format === "story" ? 8 : 4
+        <div style={{ fontSize: 11, color: "#475569", lineHeight: 1.45, marginTop: "auto" }}>
+          <div><strong>Condições:</strong> {data.formaPagamento}</div>
+          <div><strong>Tributos:</strong> {data.tributos}</div>
+          <div><strong>Validade:</strong> {data.propostaValidade}</div>
+        </div>
+      </ProposalPage>
+    </div>
   );
-
-  ctx.font = "700 28px Inter, sans-serif";
-  ctx.fillText(`Proposta Nº ${data.propostaNumero || "—"}`, 120, cardY + cardHeight - 74);
-
-  return { canvas, baseWidth, baseHeight };
 }
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
@@ -431,8 +391,7 @@ export default function App() {
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [organization, setOrganization] = useState(null);
   const [organizationLoading, setOrganizationLoading] = useState(false);
-  const [exportResolution, setExportResolution] = useState("web");
-  const [exportingImage, setExportingImage] = useState(false);
+  const [previewMode, setPreviewMode] = useState("completa"); // "completa" | "compacta"
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
   const isMobile = useIsMobile();
@@ -1062,6 +1021,20 @@ export default function App() {
             page-break-after: always;
             break-after: page;
             overflow: hidden !important;
+          }
+          .print-page-cover {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+          }
+          .print-footer {
+            background: #eff6ff !important;
+            border-top: 2px solid #dbeafe !important;
+          }
+          .print-signature {
+            display: block !important;
+          }
+          .compact-preview .print-page {
+            min-height: 297mm !important;
+            height: 297mm !important;
           }
           .print-page:last-child {
             page-break-after: auto;
