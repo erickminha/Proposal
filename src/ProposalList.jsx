@@ -240,6 +240,23 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
           </p>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                background: "white",
+                color: "#475569",
+                border: "1px solid #e2e8f0",
+                padding: "10px 20px",
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              ← Módulos
+            </button>
+          )}
           <button
             onClick={onOpenCandidates}
             style={{
