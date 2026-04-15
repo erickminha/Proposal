@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
+import AppShell from "./AppShell";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 import { runOnboarding } from "./onboarding";
 
@@ -519,12 +520,20 @@ export default function App() {
   if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("list"); }} />;
 
   if (screen === "list") return (
-    <ProposalList
-      user={user}
-      onNew={handleNew}
-      onLoad={handleLoad}
-      corPrimaria={data.corPrimaria}
-    />
+    <AppShell
+      moduleName="Gestão de Propostas"
+      breadcrumb={["Hub", "Propostas"]}
+      onBackToHub={() => navigate("/")}
+      userEmail={user?.email}
+    >
+      <ProposalList
+        user={user}
+        onNew={handleNew}
+        onLoad={handleLoad}
+        onSignOut={handleSignOut}
+        corPrimaria={data.corPrimaria}
+      />
+    </AppShell>
   );
 
   // ── EDITOR SCREEN ──
@@ -732,8 +741,108 @@ export default function App() {
     </div>
   );
 
+  const editorBody = (
+    <>
+      {isMobile ? (
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          {mobileScreen === "form"
+            ? <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>{formContent}</div>
+            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}><PreviewContent data={data} logoSrc={logoSrc} /></div>
+          }
+        </div>
+      ) : (
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <div className="no-print" style={{ width: 400, minWidth: 400, background: "white", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {formContent}
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "48px 0" }}>
+            <PreviewContent data={data} logoSrc={logoSrc} />
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  const topActions = (
+    <>
+      {!isMobile && (
+        <button
+          onClick={() => setAutoSaveEnabled(prev => !prev)}
+          style={{
+            background: autoSaveEnabled ? "#ecfdf5" : "#f8fafc",
+            color: autoSaveEnabled ? "#047857" : "#475569",
+            border: `1px solid ${autoSaveEnabled ? "#86efac" : "#e2e8f0"}`,
+            padding: "8px 12px",
+            borderRadius: 999,
+            cursor: "pointer",
+            fontSize: 12,
+            fontWeight: 700
+          }}
+        >
+          {autoSaveEnabled ? "Auto-save ON" : "Auto-save OFF"}
+        </button>
+      )}
+      {saveMsg && (
+        <div style={{
+          fontSize: 12,
+          color: saveMsg.includes("❌") ? "#ef4444" : "#10b981",
+          fontWeight: 700,
+          background: saveMsg.includes("❌") ? "#fef2f2" : "#ecfdf5",
+          padding: "6px 12px",
+          borderRadius: 20,
+          display: isMobile && !saveMsg.includes("✅") ? "none" : "block"
+        }}>
+          {saveMsg}
+        </div>
+      )}
+
+      <button onClick={handleSaveManual} disabled={saving}
+        style={{
+          background: data.corPrimaria,
+          color: "white",
+          border: "none",
+          padding: "10px 20px",
+          borderRadius: 8,
+          cursor: saving ? "not-allowed" : "pointer",
+          fontSize: 13,
+          fontWeight: 700,
+          boxShadow: `0 4px 12px ${data.corPrimaria}33`,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          transition: "all 0.2s"
+        }}>
+        {saving ? <div className="spinner" style={{ borderTopColor: "white" }} /> : "💾"}
+        {!isMobile && (saving ? "Salvando..." : "Salvar")}
+      </button>
+
+      <button onClick={() => window.print()}
+        style={{ background: "white", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+        🖨️ {!isMobile && "Gerar PDF"}
+      </button>
+
+      {isMobile && (
+        <button onClick={() => setMobileScreen(mobileScreen === "form" ? "preview" : "form")}
+          style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "10px", borderRadius: 8, cursor: "pointer" }}>
+          {mobileScreen === "form" ? "👁️" : "✎"}
+        </button>
+      )}
+
+      <button onClick={handleSignOut} title="Sair"
+        style={{ background: "transparent", color: "#94a3b8", border: "none", padding: "8px", cursor: "pointer", fontSize: 18 }}>
+        🚪
+      </button>
+    </>
+  );
+
   return (
-    <div style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif", minHeight: "100vh", background: "#f1f5f9", display: "flex", flexDirection: "column" }}>
+    <AppShell
+      moduleName={data.clienteNome || "Nova Proposta"}
+      breadcrumb={["Hub", "Propostas", "Editor"]}
+      onBackToHub={() => setScreen("list")}
+      topActions={topActions}
+      userEmail={user?.email}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @media print {
@@ -768,126 +877,7 @@ export default function App() {
         .spinner { width: 16px; height: 16px; border: 2px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
-
-      {/* TOP BAR */}
-      <div className="no-print" style={{ background: "white", color: "#1e293b", padding: isMobile ? "12px 16px" : "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)", zIndex: 100 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <button onClick={() => setScreen("list")}
-            style={{ background: "#f8fafc", color: "#475569", border: "1px solid #e2e8f0", padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, transition: "all 0.2s" }}>
-            ← <span style={{ display: isMobile ? "none" : "inline" }}>Voltar</span>
-          </button>
-          <div style={{ height: 24, width: 1, background: "#e2e8f0" }} />
-          <div>
-            <div style={{ fontWeight: 800, fontSize: isMobile ? 14 : 16, color: "#0f172a" }}>
-              {data.clienteNome || "Nova Proposta"}
-            </div>
-            {!isMobile && (
-              <div style={{ fontSize: 11, color: "#64748b", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
-                <span>{data.propostaNumero ? `Nº ${data.propostaNumero}` : "Rascunho em edição"}</span>
-                <span style={{ color: "#cbd5e1" }}>•</span>
-                <span style={{ color: completionRate === 100 ? "#059669" : "#475569", fontWeight: 700 }}>
-                  {completionRate}% completo
-                </span>
-                {lastSavedAt && (
-                  <>
-                    <span style={{ color: "#cbd5e1" }}>•</span>
-                    <span>Último salvamento {lastSavedAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          {!isMobile && (
-            <button
-              onClick={() => setAutoSaveEnabled(prev => !prev)}
-              style={{
-                background: autoSaveEnabled ? "#ecfdf5" : "#f8fafc",
-                color: autoSaveEnabled ? "#047857" : "#475569",
-                border: `1px solid ${autoSaveEnabled ? "#86efac" : "#e2e8f0"}`,
-                padding: "8px 12px",
-                borderRadius: 999,
-                cursor: "pointer",
-                fontSize: 12,
-                fontWeight: 700
-              }}
-            >
-              {autoSaveEnabled ? "Auto-save ON" : "Auto-save OFF"}
-            </button>
-          )}
-          {saveMsg && (
-            <div style={{ 
-              fontSize: 12, 
-              color: saveMsg.includes("❌") ? "#ef4444" : "#10b981", 
-              fontWeight: 700, 
-              background: saveMsg.includes("❌") ? "#fef2f2" : "#ecfdf5",
-              padding: "6px 12px",
-              borderRadius: 20,
-              display: isMobile && !saveMsg.includes("✅") ? "none" : "block"
-            }}>
-              {saveMsg}
-            </div>
-          )}
-          
-          <button onClick={handleSaveManual} disabled={saving}
-            style={{ 
-              background: data.corPrimaria, 
-              color: "white", 
-              border: "none", 
-              padding: "10px 20px", 
-              borderRadius: 8, 
-              cursor: saving ? "not-allowed" : "pointer", 
-              fontSize: 13, 
-              fontWeight: 700,
-              boxShadow: `0 4px 12px ${data.corPrimaria}33`,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              transition: "all 0.2s"
-            }}>
-            {saving ? <div className="spinner" style={{ borderTopColor: "white" }} /> : "💾"}
-            {!isMobile && (saving ? "Salvando..." : "Salvar")}
-          </button>
-
-          <button onClick={() => window.print()}
-            style={{ background: "white", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-            🖨️ {!isMobile && "Gerar PDF"}
-          </button>
-
-          {isMobile && (
-            <button onClick={() => setMobileScreen(mobileScreen === "form" ? "preview" : "form")}
-              style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "10px", borderRadius: 8, cursor: "pointer" }}>
-              {mobileScreen === "form" ? "👁️" : "✎"}
-            </button>
-          )}
-          
-          <button onClick={handleSignOut} title="Sair"
-            style={{ background: "transparent", color: "#94a3b8", border: "none", padding: "8px", cursor: "pointer", fontSize: 18 }}>
-            🚪
-          </button>
-        </div>
-      </div>
-
-      {/* BODY */}
-      {isMobile ? (
-        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          {mobileScreen === "form"
-            ? <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>{formContent}</div>
-            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}><PreviewContent data={data} logoSrc={logoSrc} /></div>
-          }
-        </div>
-      ) : (
-        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-          <div className="no-print" style={{ width: 400, minWidth: 400, background: "white", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            {formContent}
-          </div>
-          <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "48px 0" }}>
-            <PreviewContent data={data} logoSrc={logoSrc} />
-          </div>
-        </div>
-      )}
-    </div>
+      {editorBody}
+    </AppShell>
   );
 }
