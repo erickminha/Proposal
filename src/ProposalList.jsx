@@ -228,7 +228,10 @@ export default function ProposalList({ user, organizationId, organizationLoading
             </button>
           )}
           <button
-            onClick={onOpenCandidates}
+            onClick={() => {
+              setActiveView("pareceres");
+              if (onOpenCandidates) onOpenCandidates();
+            }}
             style={{
               background: "white",
               color: "#0f172a",
