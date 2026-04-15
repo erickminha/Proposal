@@ -21,6 +21,8 @@ const defaultData = {
   status: "Rascunho",
   clienteNome: "",
   clienteCNPJ: "",
+  linkCandidaturaPublica: "",
+  sourceCampaign: "anuncio-rga",
   introTexto: "Sabemos que suas vagas não são para qualquer um — cada posição fortalece sua equipe, aumenta a produtividade e consolida sua cultura.\n\nO desafio é encontrar esses profissionais sem desperdiçar tempo, dinheiro e recursos internos.\n\nA RGA Recursos Humanos resolve isso para você.\n\nNão apenas preenchemos vagas — garantimos contratações de qualidade que transformam sua empresa.",
   diferenciais: [
     { titulo: "Seleção de Precisão, Não de Volume", descricao: "Enquanto outros enviam dezenas de currículos genéricos, nós enviamos 3 candidatos pré-aprovados e altamente qualificados por vaga. Cada um passou por:", itens: ["Análise comportamental profunda", "Testes de perfil e competências", "Verificação de referências profissionais", "Checagem de antecedentes criminais"], resultado: "Candidatos que não apenas têm o perfil técnico, mas que se alinham à sua cultura e prosperam na sua organização." },
@@ -172,7 +174,7 @@ function ProposalPage({ data, logoSrc, children, isCapa = false }) {
 }
 
 // ─── PREVIEW (3 pages) ────────────────────────────────────────────────────────
-function PreviewContent({ data, logoSrc }) {
+function PreviewContent({ data, logoSrc, publicApplicationUrl, publicApplicationQrUrl }) {
   return (
     <div className="preview-content" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32, padding: "32px 16px" }}>
       {/* PAGE 1: CAPA */}
@@ -275,6 +277,17 @@ function PreviewContent({ data, logoSrc }) {
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, fontWeight: 800, color: data.corPrimaria, marginBottom: 8 }}>PRÓXIMOS PASSOS</div>
           <p style={{ fontSize: 12, color: "#475569", lineHeight: 1.5 }}>{data.proximosPassos.split("\n\n")[0]}</p>
+        </div>
+
+        <div style={{ marginTop: 20, border: "1px solid #e2e8f0", borderRadius: 10, padding: 12, display: "grid", gridTemplateColumns: "1fr auto", alignItems: "center", gap: 12, background: "#f8fafc" }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: data.corPrimaria, marginBottom: 4 }}>CANDIDATURA PÚBLICA</div>
+            <div style={{ fontSize: 11, color: "#334155", marginBottom: 4, wordBreak: "break-all" }}>{publicApplicationUrl}</div>
+            <div style={{ fontSize: 10, color: "#64748b" }}>
+              source_campaign: {data.sourceCampaign || "direct"}
+            </div>
+          </div>
+          <img src={publicApplicationQrUrl} alt="QR code para candidatura" style={{ width: 86, height: 86, borderRadius: 8, border: "1px solid #cbd5e1", background: "white", padding: 4 }} />
         </div>
 
         <div style={{ marginTop: 32, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 48 }}>
@@ -499,6 +512,7 @@ export default function App() {
     { key: "propostaNumero", label: "Número da proposta", tab: "cliente" },
     { key: "introTexto", label: "Texto de abertura", tab: "cliente" },
     { key: "proximosPassos", label: "Próximos passos", tab: "cliente" },
+    { key: "linkCandidaturaPublica", label: "Link de candidatura", tab: "cliente" },
   ]), []);
 
   const missingChecklistItems = completionChecklist.filter(item => {
@@ -506,6 +520,26 @@ export default function App() {
     return !String(value || "").trim();
   });
   const completionRate = Math.round(((completionChecklist.length - missingChecklistItems.length) / completionChecklist.length) * 100);
+
+
+  const getPublicApplicationUrl = () => {
+    const fallbackPath = `${window.location.origin}/candidatura`;
+    const base = String(data.linkCandidaturaPublica || fallbackPath).trim() || fallbackPath;
+
+    try {
+      const url = new URL(base, window.location.origin);
+      if (savedId) url.searchParams.set("proposal_id", savedId);
+      if (String(data.sourceCampaign || "").trim()) {
+        url.searchParams.set("source_campaign", String(data.sourceCampaign).trim());
+      }
+      return url.toString();
+    } catch (_error) {
+      return base;
+    }
+  };
+
+  const publicApplicationUrl = getPublicApplicationUrl();
+  const publicApplicationQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(publicApplicationUrl)}`;
 
   // ── Render ──
   if (!authChecked) return (
@@ -673,6 +707,17 @@ export default function App() {
             <FieldGroup key={k} label={l}><FInput value={data[k]} onChange={e => set(k, e.target.value)} /></FieldGroup>
           ))}
           <FieldGroup label="CNPJ do Cliente"><FInput value={data.clienteCNPJ} onChange={e => set("clienteCNPJ", e.target.value)} mask="cnpj" placeholder="00.000.000/0001-00" /></FieldGroup>
+          <FieldGroup label="Link público de candidatura">
+            <FInput value={data.linkCandidaturaPublica} onChange={e => set("linkCandidaturaPublica", e.target.value)} placeholder={`${window.location.origin}/candidatura`} />
+          </FieldGroup>
+          <FieldGroup label="source_campaign (origem do anúncio)">
+            <FInput value={data.sourceCampaign} onChange={e => set("sourceCampaign", e.target.value)} placeholder="linkedin-abril-2026" />
+          </FieldGroup>
+          <FieldGroup label="Link final com tracking">
+            <div style={{ fontSize: 12, color: "#475569", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 12px", wordBreak: "break-all" }}>
+              {publicApplicationUrl}
+            </div>
+          </FieldGroup>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <FieldGroup label="Data da Proposta"><FInput type="date" value={data.propostaData} onChange={e => set("propostaData", e.target.value)} /></FieldGroup>
             <FieldGroup label="Status Atual">
@@ -875,7 +920,7 @@ export default function App() {
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {mobileScreen === "form"
             ? <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>{formContent}</div>
-            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}><PreviewContent data={data} logoSrc={logoSrc} /></div>
+            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}><PreviewContent data={data} logoSrc={logoSrc} publicApplicationUrl={publicApplicationUrl} publicApplicationQrUrl={publicApplicationQrUrl} /></div>
           }
         </div>
       ) : (
@@ -884,7 +929,7 @@ export default function App() {
             {formContent}
           </div>
           <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "48px 0" }}>
-            <PreviewContent data={data} logoSrc={logoSrc} />
+            <PreviewContent data={data} logoSrc={logoSrc} publicApplicationUrl={publicApplicationUrl} publicApplicationQrUrl={publicApplicationQrUrl} />
           </div>
         </div>
       )}
