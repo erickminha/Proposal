@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
-export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimaria }) {
+export default function ProposalList({ user, organizationId, organizationLoading, onNew, onLoad, onSignOut, corPrimaria }) {
   const [activeView, setActiveView] = useState("propostas");
   const [propostas, setPropostas] = useState([]);
   const [filteredPropostas, setFilteredPropostas] = useState([]);
@@ -17,55 +17,25 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [organizationId, setOrganizationId] = useState(null);
-
-  // Buscar organization_id dos metadados ou da tabela profiles
-  useEffect(() => {
-    const fetchOrgId = async () => {
-      if (!user) {
-        setOrganizationId(null);
-        return;
-      }
-
-      // Tenta obter dos metadados primeiro
-      let orgId = user?.app_metadata?.organization_id || user?.user_metadata?.organization_id;
-      if (orgId) {
-        setOrganizationId(orgId);
-        return;
-      }
-
-      // Se não tiver nos metadados, busca da tabela profiles
-      try {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("organization_id")
-          .eq("id", user.id)
-          .single();
-
-        if (!error && data?.organization_id) {
-          orgId = data.organization_id;
-          setOrganizationId(orgId);
-          // Atualiza os metadados para evitar nova consulta
-          await supabase.auth.updateUser({
-            data: { organization_id: orgId }
-          });
-        } else {
-          setOrganizationId(null);
-        }
-      } catch (err) {
-        console.error("Erro ao buscar organization_id:", err);
-        setOrganizationId(null);
-      }
-    };
-
-    fetchOrgId();
-  }, [user]);
 
   // Buscar propostas e pareceres quando organizationId estiver disponível
   useEffect(() => {
-    if (!user || !organizationId) return;
+    if (!user) return;
+    if (organizationLoading) {
+      setLoading(true);
+      return;
+    }
+    if (!organizationId) {
+      setLoading(false);
+      setError("Organização não identificada para listar dados internos.");
+      setPropostas([]);
+      setFilteredPropostas([]);
+      setCandidateReports([]);
+      setFilteredCandidateReports([]);
+      return;
+    }
     fetchInternalData();
-  }, [user, organizationId]);
+  }, [user, organizationId, organizationLoading]);
 
   useEffect(() => {
     if (!searchTerm.trim()) {
