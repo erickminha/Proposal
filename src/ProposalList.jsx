@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
-export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimaria }) {
+export default function ProposalList({ user, onNew, onLoad, onSignOut, onOpenCandidates, corPrimaria }) {
   const [propostas, setPropostas] = useState([]);
   const [filteredPropostas, setFilteredPropostas] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -171,6 +171,24 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
           </p>
         </div>
         <div style={{ display: "flex", gap: 12 }}>
+          <button
+            onClick={onOpenCandidates}
+            style={{
+              background: "white",
+              color: "#0f172a",
+              border: "1px solid #e2e8f0",
+              padding: "10px 20px",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8
+            }}
+          >
+            👥 Candidaturas
+          </button>
           <button
             onClick={onNew}
             style={{
