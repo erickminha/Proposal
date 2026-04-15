@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
-import CandidateList from "./CandidateList";
+import ModuleHub from "./ModuleHub";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 import { runOnboarding } from "./onboarding";
 
@@ -366,7 +366,8 @@ function CompactPreviewContent({ data, logoSrc }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [screen, setScreen] = useState("list"); // "list" | "candidates" | "editor"
+  const [screen, setScreen] = useState("hub"); // "hub" | "list" | "editor"
+  const [userRole, setUserRole] = useState("recruiter");
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
@@ -502,75 +503,14 @@ export default function App() {
     setLastSavedAt(null);
     setLogoSrc(null);
     setTab("empresa");
-    setScreen("list");
+    setUserRole("recruiter");
+    setScreen("hub");
     navigate("/");
   };
 
-  const saveGeneratedArtMetadata = async (metadata) => {
-    const nextMetadata = [
-      metadata,
-      ...(Array.isArray(data.generatedArtMetadata) ? data.generatedArtMetadata : []),
-    ].slice(0, 20);
-
-    const nextData = { ...data, generatedArtMetadata: nextMetadata };
-    setData(nextData);
-
-    if (!savedId || !user) return;
-    const { error } = await supabase
-      .from("propostas")
-      .update({
-        dados: nextData,
-        status: data.status || "Rascunho",
-        cliente_nome: data.clienteNome,
-        proposta_numero: data.propostaNumero,
-      })
-      .eq("id", savedId);
-
-    if (error) {
-      setSaveMsg("❌ Erro ao salvar metadata da arte");
-      return;
-    }
-    setLastSavedAt(new Date());
-  };
-
-  const handleDownloadJpg = async (format) => {
-    try {
-      setExportingImage(true);
-      const selectedResolution = exportResolutionOptions[exportResolution] || exportResolutionOptions.web;
-      const { canvas, baseWidth, baseHeight } = await renderAdCanvas({
-        data,
-        logoSrc,
-        format,
-        scale: selectedResolution.scale,
-      });
-      const quality = 0.92;
-      const fileName = `${(data.clienteNome || "anuncio").replace(/\s+/g, "-").toLowerCase()}-${format}-${exportResolution}.jpg`;
-      const href = canvas.toDataURL("image/jpeg", quality);
-      const link = document.createElement("a");
-      link.href = href;
-      link.download = fileName;
-      link.click();
-
-      const metadata = {
-        id: typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        createdAt: new Date().toISOString(),
-        format: "jpg",
-        layout: format,
-        resolutionPreset: exportResolution,
-        width: baseWidth * selectedResolution.scale,
-        height: baseHeight * selectedResolution.scale,
-        quality,
-        fileName,
-      };
-      await saveGeneratedArtMetadata(metadata);
-      setSaveMsg("✅ JPG gerado com sucesso!");
-      setTimeout(() => setSaveMsg(""), 3000);
-    } catch (error) {
-      console.error(error);
-      setSaveMsg("❌ Falha ao gerar JPG.");
-    } finally {
-      setExportingImage(false);
-    }
+  const resolveUiRole = (role) => {
+    if (role === "owner" || role === "admin") return role;
+    return "recruiter";
   };
 
   const updateDiferencial = (i, field, val) => set("diferenciais", data.diferenciais.map((d, idx) => idx === i ? { ...d, [field]: val } : d));
@@ -592,9 +532,13 @@ export default function App() {
   const loadOrganization = async () => {
     if (!user) return;
     setOrganizationLoading(true);
-    const { data, error } = await supabase.from("profiles").select("organization_id").eq("id", user.id).single();
+    const { data, error } = await supabase.from("profiles").select("organization_id, role").eq("id", user.id).single();
     if (error) {
       console.error("Erro ao carregar profile:", error);
+    }
+
+    if (!error) {
+      setUserRole(resolveUiRole(data?.role));
     }
 
     if (!error && data?.organization_id) {
@@ -652,15 +596,32 @@ export default function App() {
     </div>
   );
 
-  if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("list"); }} />;
+  if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("hub"); }} />;
+
+  const handleOpenModule = (moduleId) => {
+    if (moduleId === "propostas") {
+      setScreen("list");
+      return;
+    }
+    window.alert("Este módulo será disponibilizado em breve.");
+  };
+
+  if (screen === "hub") return (
+    <ModuleHub
+      user={user}
+      role={userRole}
+      onOpenModule={handleOpenModule}
+      onSignOut={handleSignOut}
+    />
+  );
 
   if (screen === "list") return (
     <ProposalList
       user={user}
       onNew={handleNew}
       onLoad={handleLoad}
+      onBack={() => setScreen("hub")}
       onSignOut={handleSignOut}
-      onOpenCandidates={() => setScreen("candidates")}
       corPrimaria={data.corPrimaria}
     />
   );
@@ -898,8 +859,108 @@ export default function App() {
     </div>
   );
 
+  const editorBody = (
+    <>
+      {isMobile ? (
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          {mobileScreen === "form"
+            ? <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>{formContent}</div>
+            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}><PreviewContent data={data} logoSrc={logoSrc} /></div>
+          }
+        </div>
+      ) : (
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+          <div className="no-print" style={{ width: 400, minWidth: 400, background: "white", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            {formContent}
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "48px 0" }}>
+            <PreviewContent data={data} logoSrc={logoSrc} />
+          </div>
+        </div>
+      )}
+    </>
+  );
+
+  const topActions = (
+    <>
+      {!isMobile && (
+        <button
+          onClick={() => setAutoSaveEnabled(prev => !prev)}
+          style={{
+            background: autoSaveEnabled ? "#ecfdf5" : "#f8fafc",
+            color: autoSaveEnabled ? "#047857" : "#475569",
+            border: `1px solid ${autoSaveEnabled ? "#86efac" : "#e2e8f0"}`,
+            padding: "8px 12px",
+            borderRadius: 999,
+            cursor: "pointer",
+            fontSize: 12,
+            fontWeight: 700
+          }}
+        >
+          {autoSaveEnabled ? "Auto-save ON" : "Auto-save OFF"}
+        </button>
+      )}
+      {saveMsg && (
+        <div style={{
+          fontSize: 12,
+          color: saveMsg.includes("❌") ? "#ef4444" : "#10b981",
+          fontWeight: 700,
+          background: saveMsg.includes("❌") ? "#fef2f2" : "#ecfdf5",
+          padding: "6px 12px",
+          borderRadius: 20,
+          display: isMobile && !saveMsg.includes("✅") ? "none" : "block"
+        }}>
+          {saveMsg}
+        </div>
+      )}
+
+      <button onClick={handleSaveManual} disabled={saving}
+        style={{
+          background: data.corPrimaria,
+          color: "white",
+          border: "none",
+          padding: "10px 20px",
+          borderRadius: 8,
+          cursor: saving ? "not-allowed" : "pointer",
+          fontSize: 13,
+          fontWeight: 700,
+          boxShadow: `0 4px 12px ${data.corPrimaria}33`,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          transition: "all 0.2s"
+        }}>
+        {saving ? <div className="spinner" style={{ borderTopColor: "white" }} /> : "💾"}
+        {!isMobile && (saving ? "Salvando..." : "Salvar")}
+      </button>
+
+      <button onClick={() => window.print()}
+        style={{ background: "white", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+        🖨️ {!isMobile && "Gerar PDF"}
+      </button>
+
+      {isMobile && (
+        <button onClick={() => setMobileScreen(mobileScreen === "form" ? "preview" : "form")}
+          style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "10px", borderRadius: 8, cursor: "pointer" }}>
+          {mobileScreen === "form" ? "👁️" : "✎"}
+        </button>
+      )}
+
+      <button onClick={handleSignOut} title="Sair"
+        style={{ background: "transparent", color: "#94a3b8", border: "none", padding: "8px", cursor: "pointer", fontSize: 18 }}>
+        🚪
+      </button>
+    </>
+  );
+
   return (
-    <div style={{ fontFamily: "'Inter', 'Segoe UI', sans-serif", minHeight: "100vh", background: "#f1f5f9", display: "flex", flexDirection: "column" }}>
+    <AppShell
+      moduleName={data.clienteNome || "Nova Proposta"}
+      breadcrumb={["Hub", "Propostas", "Editor"]}
+      onBackToHub={() => setScreen("list")}
+      topActions={topActions}
+      userEmail={user?.email}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @media print {
