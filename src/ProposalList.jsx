@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
-export default function ProposalList({ user, onNew, onLoad, onSignOut, onBack, corPrimaria }) {
+export default function ProposalList({ user, onNew, onLoad, onSignOut, onNewJobAd, corPrimaria }) {
   const [propostas, setPropostas] = useState([]);
   const [filteredPropostas, setFilteredPropostas] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -224,6 +224,24 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, onBack, c
             }}
           >
             ➕ Nova Proposta
+          </button>
+          <button
+            onClick={onNewJobAd}
+            style={{
+              background: "#0f172a",
+              color: "white",
+              border: "none",
+              padding: "10px 20px",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8
+            }}
+          >
+            🧩 Criar Anúncio
           </button>
           <button
             onClick={onSignOut}

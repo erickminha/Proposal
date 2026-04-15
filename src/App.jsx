@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
-import ModuleHub from "./ModuleHub";
+import JobAdBuilder from "./JobAdBuilder";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 import { runOnboarding } from "./onboarding";
 
@@ -406,8 +406,7 @@ async function renderAdCanvas({ data, logoSrc, format, scale }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [screen, setScreen] = useState("hub"); // "hub" | "list" | "editor"
-  const [userRole, setUserRole] = useState("recruiter");
+  const [screen, setScreen] = useState("list"); // "list" | "editor" | "jobAd"
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
@@ -661,20 +660,15 @@ export default function App() {
       user={user}
       onNew={handleNew}
       onLoad={handleLoad}
-      onBack={() => setScreen("hub")}
+      onNewJobAd={() => setScreen("jobAd")}
       onSignOut={handleSignOut}
       corPrimaria={data.corPrimaria}
     />
   );
 
-  if (screen === "candidates") return (
-    <CandidateList
-      user={user}
-      corPrimaria={data.corPrimaria}
-      onBackToProposals={() => setScreen("list")}
-      onSignOut={handleSignOut}
-    />
-  );
+  if (screen === "jobAd") {
+    return <JobAdBuilder onBack={() => setScreen("list")} />;
+  }
 
   // ── EDITOR SCREEN ──
   const formContent = (
