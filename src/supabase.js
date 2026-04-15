@@ -34,3 +34,7 @@ export function changeMemberRole(payload) {
 export function removeMember(payload) {
   return invokeAdminFunction("remove_member", payload);
 }
+
+export function submitCandidate(payload) {
+  return invokeAdminFunction("submit_candidate", payload);
+}
