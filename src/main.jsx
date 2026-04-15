@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import App from './App.jsx'
 import AcceptInvite from './AcceptInvite.jsx'
-import CareersPublic from './CareersPublic.jsx'
+import CandidatePage from './CandidatePage.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -11,8 +11,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />
-        <Route path="/trabalhe-conosco" element={<CareersPublic />} />
-        <Route path="/vagas" element={<CareersPublic />} />
+        <Route path="/trabalhe-conosco" element={<CandidatePage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
