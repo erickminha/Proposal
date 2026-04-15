@@ -607,13 +607,16 @@ export default function App() {
 
     try {
       const url = new URL(base, window.location.origin);
+      if (url.pathname === "/trabalhe-conosco") {
+        url.pathname = "/candidatura";
+      }
       if (savedId) url.searchParams.set("proposal_id", savedId);
       if (String(data.sourceCampaign || "").trim()) {
         url.searchParams.set("source_campaign", String(data.sourceCampaign).trim());
       }
       return url.toString();
     } catch (_error) {
-      return base;
+      return fallbackPath;
     }
   };
 
