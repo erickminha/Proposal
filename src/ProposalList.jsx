@@ -172,6 +172,24 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, onNewJobA
         </div>
         <div style={{ display: "flex", gap: 12 }}>
           <button
+            onClick={onOpenCandidates}
+            style={{
+              background: "white",
+              color: "#0f172a",
+              border: "1px solid #e2e8f0",
+              padding: "10px 20px",
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8
+            }}
+          >
+            👥 Candidaturas
+          </button>
+          <button
             onClick={onNew}
             style={{
               background: corPrimaria || "#1976D2",
