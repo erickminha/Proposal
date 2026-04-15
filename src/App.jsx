@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
+import JobAdBuilder from "./JobAdBuilder";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 import { runOnboarding } from "./onboarding";
 
@@ -298,7 +299,7 @@ function PreviewContent({ data, logoSrc }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [screen, setScreen] = useState("list"); // "list" | "editor"
+  const [screen, setScreen] = useState("list"); // "list" | "editor" | "jobAd"
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
@@ -523,9 +524,15 @@ export default function App() {
       user={user}
       onNew={handleNew}
       onLoad={handleLoad}
+      onNewJobAd={() => setScreen("jobAd")}
+      onSignOut={handleSignOut}
       corPrimaria={data.corPrimaria}
     />
   );
+
+  if (screen === "jobAd") {
+    return <JobAdBuilder onBack={() => setScreen("list")} />;
+  }
 
   // ── EDITOR SCREEN ──
   const formContent = (
