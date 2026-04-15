@@ -99,6 +99,8 @@ $$;
 
 -- Corrige propostas.organization_id com base no vínculo canônico (profiles).
 -- Isso corrige inclusive casos antigos em que organization_id foi preenchido como user_id.
+-- Também evita colisões de (organization_id, proposta_numero) durante o backfill,
+-- reenumerando apenas os duplicados que surgirem após a consolidação por organização.
 update public.propostas pr
 set organization_id = pf.organization_id
 from public.profiles pf
@@ -112,6 +114,50 @@ where pf.id = pr.user_id
       where o.id = pr.organization_id
     )
   );
+
+with colliding_rows as (
+  select pr.id,
+         pr.organization_id,
+         pr.proposta_numero,
+         coalesce(nullif(split_part(pr.proposta_numero, '/', 2), ''), extract(year from coalesce(pr.created_at, now()))::text) as proposal_year,
+         row_number() over (
+           partition by pr.organization_id, pr.proposta_numero
+           order by pr.created_at nulls last, pr.id
+         ) as duplicate_rank
+  from public.propostas pr
+),
+rows_to_renumber as (
+  select c.id,
+         c.organization_id,
+         c.proposal_year,
+         row_number() over (
+           partition by c.organization_id, c.proposal_year
+           order by pr.created_at nulls last, pr.id
+         ) as seq_offset
+  from colliding_rows c
+  join public.propostas pr on pr.id = c.id
+  where c.duplicate_rank > 1
+),
+base_numbers as (
+  select pr.organization_id,
+         split_part(pr.proposta_numero, '/', 2) as proposal_year,
+         max(split_part(pr.proposta_numero, '/', 1)::integer) as max_seq
+  from public.propostas pr
+  where pr.proposta_numero ~ '^[0-9]+/[0-9]{4}$'
+  group by pr.organization_id, split_part(pr.proposta_numero, '/', 2)
+),
+renumbered as (
+  select r.id,
+         format('%s/%s', coalesce(b.max_seq, 0) + r.seq_offset, r.proposal_year) as new_proposta_numero
+  from rows_to_renumber r
+  left join base_numbers b
+    on b.organization_id = r.organization_id
+   and b.proposal_year = r.proposal_year
+)
+update public.propostas pr
+set proposta_numero = rn.new_proposta_numero
+from renumbered rn
+where pr.id = rn.id;
 
 -- Valida consistência antes de aplicar constraints rígidas.
 do $$

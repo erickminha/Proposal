@@ -81,6 +81,9 @@ begin
   end if;
 end $$;
 
+-- Remove assinatura legada antes de recriar com novo tipo de retorno (void -> uuid).
+drop function if exists public.complete_onboarding(text);
+
 -- RPC de onboarding agora retorna organization_id (compatível com src/onboarding.js)
 -- A assinatura já existia com retorno void em migrações anteriores, então removemos
 -- explicitamente antes de recriar com retorno uuid.
