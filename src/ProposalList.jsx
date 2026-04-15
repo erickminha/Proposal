@@ -139,8 +139,8 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, onBack, c
 
   return (
     <div style={{
-      minHeight: "100vh",
-      background: "#f8fafc",
+      minHeight: "100%",
+      background: "transparent",
       fontFamily: "'Inter', sans-serif",
       padding: "24px"
     }}>
