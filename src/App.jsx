@@ -174,7 +174,7 @@ function ProposalPage({ data, logoSrc, children, isCapa = false }) {
 // ─── PREVIEW (3 pages) ────────────────────────────────────────────────────────
 function PreviewContent({ data, logoSrc }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32, padding: "32px 16px" }}>
+    <div className="preview-content" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 32, padding: "32px 16px" }}>
       {/* PAGE 1: CAPA */}
       <ProposalPage data={data} logoSrc={logoSrc} isCapa={true}>
         <div style={{ height: 12, background: data.corPrimaria, width: "100%" }} />
@@ -667,9 +667,29 @@ export default function App() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @media print {
+          @page { size: A4 portrait; margin: 0; }
           .no-print { display: none !important; }
           body { background: white; margin: 0; }
-          .print-page { page-break-after: always; box-shadow: none !important; max-width: 100% !important; margin: 0 !important; }
+          .preview-content {
+            display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .print-page {
+            width: 210mm !important;
+            min-height: 297mm !important;
+            height: 297mm !important;
+            max-width: 210mm !important;
+            margin: 0 auto !important;
+            box-shadow: none !important;
+            page-break-after: always;
+            break-after: page;
+            overflow: hidden !important;
+          }
+          .print-page:last-child {
+            page-break-after: auto;
+            break-after: auto;
+          }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
