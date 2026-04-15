@@ -19,8 +19,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<PublicHome />} />
-        <Route path="/trabalhe-conosco" element={<CareersPage />} />
-        <Route path="/portal" element={<PortalPage />} />
+        <Route path="/portal" element={<App />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />
         <Route path="/candidatura" element={<PublicApplication />} />
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -54,7 +54,7 @@ export default function AcceptInvite() {
 
       clearPendingInviteToken()
       setStatus('Convite aceito com sucesso!')
-      setTimeout(() => navigate('/', { replace: true }), 1200)
+      setTimeout(() => navigate('/portal', { replace: true }), 1200)
     }
 
     checkAuthAndAccept()
