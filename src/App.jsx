@@ -139,6 +139,23 @@ function FTextarea({ value, onChange, rows = 3 }) {
   );
 }
 
+// ─── APP SHELL ─────────────────────────────────────────────────────────────────
+function AppShell({ children, moduleName, breadcrumb, onBackToHub, topActions, userEmail }) {
+  // Simples container para evitar erro de referência.
+  return <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#f8fafc" }}>{children}</div>;
+}
+
+// ─── MODULE HUB ────────────────────────────────────────────────────────────────
+function ModuleHub({ user, role, onOpenModule, onSignOut }) {
+  return (
+    <div style={{ padding: 40, textAlign: "center" }}>
+      <h2>Bem-vindo, {user?.email}</h2>
+      <button onClick={() => onOpenModule("propostas")} style={{ margin: 10, padding: "10px 20px", fontSize: 16 }}>📄 Propostas</button>
+      <button onClick={onSignOut} style={{ margin: 10, padding: "10px 20px", fontSize: 16 }}>🚪 Sair</button>
+    </div>
+  );
+}
+
 // ─── PROPOSAL PAGE WRAPPER ───────────────────────────────────────────────────
 function ProposalPage({ data, logoSrc, children, isCapa = false, showSignature = false }) {
   return (
@@ -155,7 +172,7 @@ function ProposalPage({ data, logoSrc, children, isCapa = false, showSignature =
         {!isCapa && (
           <>
             {logoSrc
-              ? <img src={logoSrc} style={{ height: 40, objectFit: "contain" }} />
+              ? <img src={logoSrc} style={{ height: 40, objectFit: "contain" }} alt="Logo" />
               : <div style={{ textAlign: "left" }}>
                   <div style={{ fontSize: 18, fontWeight: 900, color: data.corPrimaria, letterSpacing: 1 }}>{data.empresaNome.split(" ")[0]}</div>
                   <div style={{ fontSize: 7, fontWeight: 700, letterSpacing: "0.2em", color: "#64748b" }}>{data.empresaSubtitulo}</div>
@@ -195,7 +212,7 @@ function PreviewContent({ data, logoSrc, publicApplicationUrl, publicApplication
       <ProposalPage data={data} logoSrc={logoSrc} isCapa={true}>
         <div style={{ height: 12, background: data.corPrimaria, width: "100%" }} />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 64px" }}>
-          {logoSrc ? <img src={logoSrc} style={{ maxWidth: 300, maxHeight: 240, objectFit: "contain", marginBottom: 48 }} />
+          {logoSrc ? <img src={logoSrc} style={{ maxWidth: 300, maxHeight: 240, objectFit: "contain", marginBottom: 48 }} alt="Logo capa" />
             : <div style={{ textAlign: "center", marginBottom: 48 }}>
                 <div style={{ fontSize: 72, fontWeight: 900, color: data.corPrimaria, letterSpacing: 4 }}>{data.empresaNome.split(" ")[0]}</div>
                 <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: "0.4em", color: "#475569", marginTop: 8 }}>{data.empresaSubtitulo}</div>
@@ -321,65 +338,11 @@ function PreviewContent({ data, logoSrc, publicApplicationUrl, publicApplication
   );
 }
 
-function CompactPreviewContent({ data, logoSrc }) {
-  return (
-    <div className="preview-content compact-preview" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, padding: "32px 16px" }}>
-      <ProposalPage data={data} logoSrc={logoSrc} showSignature={true}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, gap: 16 }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 800, color: data.corPrimaria, letterSpacing: 1 }}>PARECER COMERCIAL</div>
-            <div style={{ fontSize: 22, fontWeight: 900, color: "#0f172a", marginTop: 6 }}>{data.clienteNome || "Cliente"}</div>
-            <div style={{ fontSize: 11, color: "#64748b", marginTop: 4 }}>
-              Nº {data.propostaNumero || "—"} • {new Date(data.propostaData).toLocaleDateString('pt-BR')}
-            </div>
-          </div>
-          {logoSrc && <img src={logoSrc} style={{ height: 46, maxWidth: 170, objectFit: "contain" }} />}
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
-            <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700 }}>Prazo de entrega</div>
-            <div style={{ fontSize: 13, color: "#0f172a", fontWeight: 800, marginTop: 3 }}>Até 7 dias úteis</div>
-          </div>
-          <div style={{ border: "1px solid #e2e8f0", borderRadius: 8, padding: 10 }}>
-            <div style={{ fontSize: 10, color: "#64748b", fontWeight: 700 }}>Garantia</div>
-            <div style={{ fontSize: 13, color: "#0f172a", fontWeight: 800, marginTop: 3 }}>Reposição em 30 dias</div>
-          </div>
-        </div>
-
-        <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 8 }}>Resumo da solução</div>
-        <p style={{ fontSize: 12, lineHeight: 1.5, color: "#334155", marginBottom: 14 }}>
-          {data.introTexto.split("\n\n")[0]}
-        </p>
-
-        <div style={{ fontSize: 12, fontWeight: 800, color: data.corPrimaria, marginBottom: 8 }}>Investimento por nível</div>
-        <div style={{ display: "grid", gap: 6, marginBottom: 14 }}>
-          {data.niveis.map((n, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", fontSize: 11 }}>
-              <div>
-                <div style={{ fontWeight: 800, color: "#0f172a" }}>{n.nivel}</div>
-                <div style={{ color: "#64748b", marginTop: 2 }}>{n.exemplos}</div>
-              </div>
-              <div style={{ alignSelf: "center", fontWeight: 900, color: data.corPrimaria }}>{n.percentual}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ fontSize: 11, color: "#475569", lineHeight: 1.45, marginTop: "auto" }}>
-          <div><strong>Condições:</strong> {data.formaPagamento}</div>
-          <div><strong>Tributos:</strong> {data.tributos}</div>
-          <div><strong>Validade:</strong> {data.propostaValidade}</div>
-        </div>
-      </ProposalPage>
-    </div>
-  );
-}
-
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [screen, setScreen] = useState("list"); // "list" | "editor" | "jobAd"
+  const [screen, setScreen] = useState("list");
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
@@ -409,9 +372,7 @@ export default function App() {
       setAuthChecked(true);
       if (session?.user) {
         acceptInviteForUser(session.user).then(accepted => {
-          if (accepted) {
-            clearPendingInviteToken();
-          }
+          if (accepted) clearPendingInviteToken();
         });
       }
     });
@@ -486,9 +447,7 @@ export default function App() {
     if (!error && pData && pData.length > 0) {
       const lastNumber = pData[0].proposta_numero;
       const match = lastNumber.match(/(\d+)\/(\d+)/);
-      if (match) {
-        nextNumber = parseInt(match[1]) + 1;
-      }
+      if (match) nextNumber = parseInt(match[1]) + 1;
     }
     return `${nextNumber}/${currentYear}`;
   };
@@ -544,20 +503,16 @@ export default function App() {
   const loadOrganization = async () => {
     if (!user) return;
     setOrganizationLoading(true);
-    const { data, error } = await supabase.from("profiles").select("organization_id, role").eq("id", user.id).single();
-    if (error) {
-      console.error("Erro ao carregar profile:", error);
-    }
-
-    if (!error) {
-      setUserRole(resolveUiRole(data?.role));
-    }
-
-    if (!error && data?.organization_id) {
-      const { data: orgData } = await supabase.from("organizations").select("*").eq("id", data.organization_id).single();
-      if (orgData) {
-        setOrganization(orgData);
-        setData(prev => ({ ...prev, empresaNome: orgData.name || prev.empresaNome, empresaCNPJ: orgData.cnpj || prev.empresaCNPJ, empresaEndereco: orgData.endereco || prev.empresaEndereco, empresaRazaoSocial: orgData.razao_social || prev.empresaRazaoSocial, corPrimaria: orgData.cor_primaria || prev.corPrimaria, corSecundaria: orgData.cor_secundaria || prev.corSecundaria }));
+    const { data: profileData, error } = await supabase.from("profiles").select("organization_id, role").eq("id", user.id).single();
+    if (error) console.error("Erro ao carregar profile:", error);
+    else {
+      setUserRole(resolveUiRole(profileData?.role));
+      if (profileData?.organization_id) {
+        const { data: orgData } = await supabase.from("organizations").select("*").eq("id", profileData.organization_id).single();
+        if (orgData) {
+          setOrganization(orgData);
+          setData(prev => ({ ...prev, empresaNome: orgData.name || prev.empresaNome, empresaCNPJ: orgData.cnpj || prev.empresaCNPJ, empresaEndereco: orgData.endereco || prev.empresaEndereco, empresaRazaoSocial: orgData.razao_social || prev.empresaRazaoSocial, corPrimaria: orgData.cor_primaria || prev.corPrimaria, corSecundaria: orgData.cor_secundaria || prev.corSecundaria }));
+        }
       }
     }
     setOrganizationLoading(false);
@@ -600,27 +555,56 @@ export default function App() {
   });
   const completionRate = Math.round(((completionChecklist.length - missingChecklistItems.length) / completionChecklist.length) * 100);
 
-
   const getPublicApplicationUrl = () => {
     const fallbackPath = `${window.location.origin}/candidatura`;
     const base = String(data.linkCandidaturaPublica || fallbackPath).trim() || fallbackPath;
-
     try {
       const url = new URL(base, window.location.origin);
+      if (url.pathname === "/trabalhe-conosco") {
+        url.pathname = "/candidatura";
+      }
       if (savedId) url.searchParams.set("proposal_id", savedId);
       if (String(data.sourceCampaign || "").trim()) {
         url.searchParams.set("source_campaign", String(data.sourceCampaign).trim());
       }
       return url.toString();
     } catch (_error) {
-      return base;
+      return fallbackPath;
     }
   };
 
   const publicApplicationUrl = getPublicApplicationUrl();
   const publicApplicationQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(publicApplicationUrl)}`;
 
-  // ── Render ──
+  const handleDownloadJpg = async (format = "square") => {
+    if (exportingImage) return;
+    setExportingImage(true);
+    try {
+      // Placeholder: exibe alerta (substitua pela lógica com html2canvas se desejar)
+      alert(`Exportando JPG ${format === "square" ? "1080x1080" : "1080x1920"}. Implemente com html2canvas conforme necessário.`);
+      // Atualiza o histórico de metadados (exemplo)
+      setData(prev => ({
+        ...prev,
+        generatedArtMetadata: [
+          ...(prev.generatedArtMetadata || []),
+          {
+            id: Date.now(),
+            fileName: `proposta-${format}-${new Date().toISOString()}.jpg`,
+            width: 1080,
+            height: format === "square" ? 1080 : 1920,
+            createdAt: new Date().toISOString()
+          }
+        ]
+      }));
+    } catch (error) {
+      console.error("Erro ao gerar JPG:", error);
+      alert("Erro ao gerar imagem.");
+    } finally {
+      setExportingImage(false);
+    }
+  };
+
+  // ─── Render ──
   if (!authChecked) return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f8fafc" }}>
       <div style={{ fontSize: 14, color: "#94a3b8", fontWeight: 600, display: "flex", alignItems: "center", gap: 12 }}>
@@ -653,6 +637,8 @@ export default function App() {
       user={user}
       onNew={handleNew}
       onLoad={handleLoad}
+      onBack={() => setScreen("hub")}
+      onOpenCandidates={() => {}}
       onNewJobAd={() => setScreen("jobAd")}
       onSignOut={handleSignOut}
       corPrimaria={data.corPrimaria}
@@ -765,7 +751,7 @@ export default function App() {
           <div style={{ fontWeight: 800, fontSize: 16, color: "#1e293b", marginBottom: 24 }}>Dados da Empresa</div>
           <FieldGroup label="Logo da Empresa">
             <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", background: "#f8fafc", padding: 16, borderRadius: 12, border: "1px dashed #cbd5e1" }}>
-              {logoSrc && <img src={logoSrc} style={{ height: 48, objectFit: "contain", borderRadius: 4 }} />}
+              {logoSrc && <img src={logoSrc} style={{ height: 48, objectFit: "contain", borderRadius: 4 }} alt="Logo preview" />}
               <button onClick={() => logoRef.current.click()}
                 style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "10px 16px", cursor: "pointer", fontSize: 13, fontWeight: 700, color: "#475569", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
                 {logoSrc ? "🔄 Alterar Logo" : "📎 Carregar Logo"}
@@ -783,7 +769,7 @@ export default function App() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {data.generatedArtMetadata.slice(0, 5).map((item) => (
-                  <div key={item.id || item.createdAt} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
+<div key={item.id || item.createdAt} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
                     <div style={{ fontSize: 12, color: "#334155", fontWeight: 600 }}>
                       {item.fileName || "arquivo.jpg"} • {item.width}x{item.height}
                     </div>
@@ -898,106 +884,12 @@ export default function App() {
     </div>
   );
 
-  const editorBody = (
-    <>
-      {isMobile ? (
-        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          {mobileScreen === "form"
-            ? <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>{formContent}</div>
-            : <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "16px 0" }}><PreviewContent data={data} logoSrc={logoSrc} /></div>
-          }
-        </div>
-      ) : (
-        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-          <div className="no-print" style={{ width: 400, minWidth: 400, background: "white", borderRight: "1px solid #e2e8f0", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            {formContent}
-          </div>
-          <div style={{ flex: 1, overflowY: "auto", background: "#cbd5e1", padding: "48px 0" }}>
-            <PreviewContent data={data} logoSrc={logoSrc} />
-          </div>
-        </div>
-      )}
-    </>
-  );
-
-  const topActions = (
-    <>
-      {!isMobile && (
-        <button
-          onClick={() => setAutoSaveEnabled(prev => !prev)}
-          style={{
-            background: autoSaveEnabled ? "#ecfdf5" : "#f8fafc",
-            color: autoSaveEnabled ? "#047857" : "#475569",
-            border: `1px solid ${autoSaveEnabled ? "#86efac" : "#e2e8f0"}`,
-            padding: "8px 12px",
-            borderRadius: 999,
-            cursor: "pointer",
-            fontSize: 12,
-            fontWeight: 700
-          }}
-        >
-          {autoSaveEnabled ? "Auto-save ON" : "Auto-save OFF"}
-        </button>
-      )}
-      {saveMsg && (
-        <div style={{
-          fontSize: 12,
-          color: saveMsg.includes("❌") ? "#ef4444" : "#10b981",
-          fontWeight: 700,
-          background: saveMsg.includes("❌") ? "#fef2f2" : "#ecfdf5",
-          padding: "6px 12px",
-          borderRadius: 20,
-          display: isMobile && !saveMsg.includes("✅") ? "none" : "block"
-        }}>
-          {saveMsg}
-        </div>
-      )}
-
-      <button onClick={handleSaveManual} disabled={saving}
-        style={{
-          background: data.corPrimaria,
-          color: "white",
-          border: "none",
-          padding: "10px 20px",
-          borderRadius: 8,
-          cursor: saving ? "not-allowed" : "pointer",
-          fontSize: 13,
-          fontWeight: 700,
-          boxShadow: `0 4px 12px ${data.corPrimaria}33`,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          transition: "all 0.2s"
-        }}>
-        {saving ? <div className="spinner" style={{ borderTopColor: "white" }} /> : "💾"}
-        {!isMobile && (saving ? "Salvando..." : "Salvar")}
-      </button>
-
-      <button onClick={() => window.print()}
-        style={{ background: "white", color: "#1e293b", border: "1px solid #e2e8f0", padding: "10px 16px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-        🖨️ {!isMobile && "Gerar PDF"}
-      </button>
-
-      {isMobile && (
-        <button onClick={() => setMobileScreen(mobileScreen === "form" ? "preview" : "form")}
-          style={{ background: "#f1f5f9", color: "#475569", border: "1px solid #e2e8f0", padding: "10px", borderRadius: 8, cursor: "pointer" }}>
-          {mobileScreen === "form" ? "👁️" : "✎"}
-        </button>
-      )}
-
-      <button onClick={handleSignOut} title="Sair"
-        style={{ background: "transparent", color: "#94a3b8", border: "none", padding: "8px", cursor: "pointer", fontSize: 18 }}>
-        🚪
-      </button>
-    </>
-  );
-
   return (
     <AppShell
       moduleName={data.clienteNome || "Nova Proposta"}
       breadcrumb={["Hub", "Propostas", "Editor"]}
       onBackToHub={() => setScreen("list")}
-      topActions={topActions}
+      topActions={<></>}
       userEmail={user?.email}
     >
       <style>{`
@@ -1185,8 +1077,7 @@ export default function App() {
           </button>
         </div>
       </div>
-
-      {/* BODY */}
+{/* BODY */}
       {isMobile ? (
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {mobileScreen === "form"

@@ -161,7 +161,7 @@ export default function Auth({ onLogin }) {
             Quer entrar para nosso banco de talentos?
           </div>
           <Link
-            to="/trabalhe-conosco"
+            to="/candidatura"
             style={{
               display: "inline-block",
               background: "#eaf2ff",
