@@ -62,6 +62,41 @@ where not exists (
   where p.id = uwp.user_id
 );
 
+-- Antes do backfill, previne colisões de chave única por organização+número.
+-- Se múltiplas propostas de usuários diferentes forem consolidadas na mesma
+-- organização e compartilharem o mesmo proposta_numero, sufixamos as entradas
+-- duplicadas para manter a migração aplicável sem violar constraints.
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'propostas'
+      and column_name = 'id'
+  ) then
+    with duplicates as (
+      select
+        pr.id,
+        row_number() over (
+          partition by pf.organization_id, pr.proposta_numero
+          order by pr.created_at nulls last, pr.id
+        ) as rn
+      from public.propostas pr
+      join public.profiles pf on pf.id = pr.user_id
+      where pr.proposta_numero is not null
+    )
+    update public.propostas pr
+    set proposta_numero = format('%s-dup-%s', pr.proposta_numero, left(pr.id::text, 8))
+    from duplicates d
+    where pr.id = d.id
+      and d.rn > 1;
+  else
+    raise exception 'Validação falhou: coluna public.propostas.id não encontrada para deduplicação segura.';
+  end if;
+end
+$$;
+
 -- Corrige propostas.organization_id com base no vínculo canônico (profiles).
 -- Isso corrige inclusive casos antigos em que organization_id foi preenchido como user_id.
 update public.propostas pr
@@ -162,7 +197,7 @@ begin
     into next_seq
   from public.propostas
   where organization_id = org_id
-    and proposta_numero ~ '^\\d+/\\d{4}$'
+    and proposta_numero ~ '^[0-9]+/[0-9]{4}$'
     and split_part(proposta_numero, '/', 2) = current_year;
 
   return format('%s/%s', next_seq, current_year);
