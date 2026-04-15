@@ -12,7 +12,7 @@ import {
 } from 'react-router-dom'
 import App from './App.jsx'
 import AcceptInvite from './AcceptInvite.jsx'
-import PublicHome from './PublicHome.jsx'
+import PublicApplication from './PublicApplication.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -21,12 +21,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/" element={<PublicHome />} />
         <Route path="/portal" element={<App />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />
-
-        <Route element={<ProtectedRoute />}>
-          <Route path="/app" element={<AppHub />} />
-          <Route path="/app/propostas/*" element={<App />} />
-        </Route>
-
+        <Route path="/candidatura" element={<PublicApplication />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
