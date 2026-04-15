@@ -392,6 +392,11 @@ export default function App() {
   const [organization, setOrganization] = useState(null);
   const [organizationLoading, setOrganizationLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState("completa"); // "completa" | "compacta"
+  const resolveUiRole = (role) => {
+    if (role === "owner" || role === "admin") return role;
+    return "recruiter";
+  };
+  const [userRole, setUserRole] = useState(resolveUiRole("recruiter"));
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
   const isMobile = useIsMobile();
@@ -515,14 +520,9 @@ export default function App() {
     setLastSavedAt(null);
     setLogoSrc(null);
     setTab("empresa");
-    setUserRole("recruiter");
+    setUserRole(resolveUiRole());
     setScreen("hub");
     navigate("/");
-  };
-
-  const resolveUiRole = (role) => {
-    if (role === "owner" || role === "admin") return role;
-    return "recruiter";
   };
 
   const updateDiferencial = (i, field, val) => set("diferenciais", data.diferenciais.map((d, idx) => idx === i ? { ...d, [field]: val } : d));
