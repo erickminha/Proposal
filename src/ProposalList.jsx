@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
-export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimaria }) {
+export default function ProposalList({
+  user,
+  onNew,
+  onLoad,
+  onSignOut,
+  corPrimaria,
+  onBack,
+  onOpenCandidates,
+  onNewJobAd
+}) {
   const [activeView, setActiveView] = useState("propostas");
   const [propostas, setPropostas] = useState([]);
   const [filteredPropostas, setFilteredPropostas] = useState([]);
@@ -258,7 +267,10 @@ export default function ProposalList({ user, onNew, onLoad, onSignOut, corPrimar
             </button>
           )}
           <button
-            onClick={onOpenCandidates}
+            onClick={() => {
+              setActiveView("pareceres");
+              if (onOpenCandidates) onOpenCandidates();
+            }}
             style={{
               background: "white",
               color: "#0f172a",
