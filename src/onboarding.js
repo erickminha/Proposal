@@ -11,12 +11,14 @@ export async function runOnboarding(companyName) {
     );
   }
 
-  // Se a RPC retornou um organization_id, atualizar os metadados do usuário
-  if (data?.organization_id) {
+  // Compatível com retorno escalar (uuid) ou objeto { organization_id }
+  const organizationId = typeof data === 'string' ? data : data?.organization_id;
+
+  if (organizationId) {
     await supabase.auth.updateUser({
-      data: { organization_id: data.organization_id }
+      data: { organization_id: organizationId }
     });
   }
 
-  return data;
+  return { organization_id: organizationId };
 }

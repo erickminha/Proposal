@@ -451,7 +451,11 @@ export default function App() {
   const loadOrganization = async () => {
     if (!user) return;
     setOrganizationLoading(true);
-    const { data, error } = await supabase.from("user_profiles").select("organization_id").eq("id", user.id).single();
+    const { data, error } = await supabase.from("profiles").select("organization_id").eq("id", user.id).single();
+    if (error) {
+      console.error("Erro ao carregar profile:", error);
+    }
+
     if (!error && data?.organization_id) {
       const { data: orgData } = await supabase.from("organizations").select("*").eq("id", data.organization_id).single();
       if (orgData) {
