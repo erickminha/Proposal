@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "./supabase";
 import { runOnboarding } from "./onboarding";
 
@@ -154,6 +155,27 @@ export default function Auth({ onLogin }) {
             </button>
           </div>
         )}
+
+        <div style={{ marginTop: 22, borderTop: "1px solid #e2e8f0", paddingTop: 16, textAlign: "center" }}>
+          <div style={{ fontSize: 12, color: "#64748b", marginBottom: 10, fontWeight: 600 }}>
+            Quer entrar para nosso banco de talentos?
+          </div>
+          <Link
+            to="/trabalhe-conosco"
+            style={{
+              display: "inline-block",
+              background: "#eaf2ff",
+              color: "#0b4da6",
+              textDecoration: "none",
+              fontSize: 13,
+              fontWeight: 800,
+              padding: "10px 14px",
+              borderRadius: 999,
+            }}
+          >
+            Cadastrar Currículo
+          </Link>
+        </div>
       </div>
     </div>
   );
