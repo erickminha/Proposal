@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
+import ModuleHub from "./ModuleHub";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 import { runOnboarding } from "./onboarding";
 
@@ -298,7 +299,8 @@ function PreviewContent({ data, logoSrc }) {
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [screen, setScreen] = useState("list"); // "list" | "editor"
+  const [screen, setScreen] = useState("hub"); // "hub" | "list" | "editor"
+  const [userRole, setUserRole] = useState("recruiter");
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
@@ -433,8 +435,14 @@ export default function App() {
     setLastSavedAt(null);
     setLogoSrc(null);
     setTab("empresa");
-    setScreen("list");
+    setUserRole("recruiter");
+    setScreen("hub");
     navigate("/");
+  };
+
+  const resolveUiRole = (role) => {
+    if (role === "owner" || role === "admin") return role;
+    return "recruiter";
   };
 
   const updateDiferencial = (i, field, val) => set("diferenciais", data.diferenciais.map((d, idx) => idx === i ? { ...d, [field]: val } : d));
@@ -456,9 +464,13 @@ export default function App() {
   const loadOrganization = async () => {
     if (!user) return;
     setOrganizationLoading(true);
-    const { data, error } = await supabase.from("profiles").select("organization_id").eq("id", user.id).single();
+    const { data, error } = await supabase.from("profiles").select("organization_id, role").eq("id", user.id).single();
     if (error) {
       console.error("Erro ao carregar profile:", error);
+    }
+
+    if (!error) {
+      setUserRole(resolveUiRole(data?.role));
     }
 
     if (!error && data?.organization_id) {
@@ -516,13 +528,32 @@ export default function App() {
     </div>
   );
 
-  if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("list"); }} />;
+  if (!user) return <Auth onLogin={(u) => { setUser(u); setScreen("hub"); }} />;
+
+  const handleOpenModule = (moduleId) => {
+    if (moduleId === "propostas") {
+      setScreen("list");
+      return;
+    }
+    window.alert("Este módulo será disponibilizado em breve.");
+  };
+
+  if (screen === "hub") return (
+    <ModuleHub
+      user={user}
+      role={userRole}
+      onOpenModule={handleOpenModule}
+      onSignOut={handleSignOut}
+    />
+  );
 
   if (screen === "list") return (
     <ProposalList
       user={user}
       onNew={handleNew}
       onLoad={handleLoad}
+      onBack={() => setScreen("hub")}
+      onSignOut={handleSignOut}
       corPrimaria={data.corPrimaria}
     />
   );
