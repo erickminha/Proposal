@@ -70,9 +70,9 @@ export default function Auth({ onLogin }) {
       }}>
         {/* Logo/Header */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>📄</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: "#1565C0", letterSpacing: 1 }}>RGA</div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.25em", color: "#888", textTransform: "uppercase" }}>Gerador de Propostas</div>
+          <div style={{ fontSize: 36, marginBottom: 8 }}>👥</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: "#1565C0", letterSpacing: 1 }}>RGA RH</div>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.25em", color: "#888", textTransform: "uppercase" }}>Recrutamento e Seleção</div>
         </div>
 
         {/* Mode toggle */}

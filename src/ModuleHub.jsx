@@ -45,7 +45,7 @@ export default function ModuleHub({ user, role, onOpenModule, onSignOut }) {
       <div style={{ maxWidth: 1120, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, marginBottom: 24, flexWrap: "wrap" }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 30, fontWeight: 800, color: "#0f172a" }}>Module Hub</h1>
+            <h1 style={{ margin: 0, fontSize: 30, fontWeight: 800, color: "#0f172a" }}>RGA RH - Painel de Controle</h1>
             <p style={{ margin: "6px 0 0", fontSize: 14, color: "#64748b" }}>
               {user?.email} • Perfil: <strong style={{ color: "#334155" }}>{roleLabel}</strong>
             </p>
