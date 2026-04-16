@@ -1,17 +1,32 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Substitua pelos seus dados do Supabase:
-// Painel Supabase → Settings → API → Project URL e anon key
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error("Supabase URL or Anon Key is missing. Check your environment variables.");
+export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+if (!isSupabaseConfigured) {
+  console.error(
+    "Supabase URL or Anon Key is missing. Running with a safe placeholder client to avoid app crash."
+  );
 }
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const safeUrl = isSupabaseConfigured ? SUPABASE_URL : "https://placeholder.invalid";
+const safeAnonKey = isSupabaseConfigured ? SUPABASE_ANON_KEY : "placeholder-anon-key";
+
+export const supabase = createClient(safeUrl, safeAnonKey);
+
+function ensureSupabaseConfigured() {
+  if (!isSupabaseConfigured) {
+    throw new Error(
+      "Supabase não configurado. Defina VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no ambiente."
+    );
+  }
+}
 
 async function invokeAdminFunction(functionName, payload) {
+  ensureSupabaseConfigured();
+
   const { data, error } = await supabase.functions.invoke(functionName, {
     body: payload,
   });
