@@ -6,6 +6,7 @@ import ProposalList from "./ProposalList";
 import JobAdBuilder from "./JobAdBuilder";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 import { runOnboarding } from "./onboarding";
+import { useOrganizationContext } from "./useOrganizationContext";
 
 // ─── DEFAULT DATA ─────────────────────────────────────────────────────────────
 const defaultData = {
@@ -352,18 +353,12 @@ export default function App() {
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [savedId, setSavedId] = useState(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
-  const [organization, setOrganization] = useState(null);
-  const [organizationLoading, setOrganizationLoading] = useState(false);
   const [previewMode, setPreviewMode] = useState("completa"); // "completa" | "compacta"
-  const resolveUiRole = (role) => {
-    if (role === "owner" || role === "admin") return role;
-    return "recruiter";
-  };
-  const [userRole, setUserRole] = useState(resolveUiRole("recruiter"));
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const { organization, userRole, loading: organizationLoading } = useOrganizationContext(user);
 
   // Check auth on load
   useEffect(() => {
@@ -473,13 +468,11 @@ export default function App() {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     await supabase.auth.signOut();
     setUser(null);
-    setOrganization(null);
     setData({ ...defaultData });
     setSavedId(null);
     setLastSavedAt(null);
     setLogoSrc(null);
     setTab("empresa");
-    setUserRole(resolveUiRole());
     setScreen("hub");
     navigate("/");
   };
@@ -500,24 +493,6 @@ export default function App() {
     reader.readAsDataURL(file);
   };
 
-  const loadOrganization = async () => {
-    if (!user) return;
-    setOrganizationLoading(true);
-    const { data: profileData, error } = await supabase.from("profiles").select("organization_id, role").eq("id", user.id).single();
-    if (error) console.error("Erro ao carregar profile:", error);
-    else {
-      setUserRole(resolveUiRole(profileData?.role));
-      if (profileData?.organization_id) {
-        const { data: orgData } = await supabase.from("organizations").select("*").eq("id", profileData.organization_id).single();
-        if (orgData) {
-          setOrganization(orgData);
-          setData(prev => ({ ...prev, empresaNome: orgData.name || prev.empresaNome, empresaCNPJ: orgData.cnpj || prev.empresaCNPJ, empresaEndereco: orgData.endereco || prev.empresaEndereco, empresaRazaoSocial: orgData.razao_social || prev.empresaRazaoSocial, corPrimaria: orgData.cor_primaria || prev.corPrimaria, corSecundaria: orgData.cor_secundaria || prev.corSecundaria }));
-        }
-      }
-    }
-    setOrganizationLoading(false);
-  };
-
   const saveOrganization = async () => {
     if (!user || !organization?.id) return;
     setSaving(true);
@@ -527,7 +502,18 @@ export default function App() {
     if (error) { setSaveMsg("Erro ao salvar: " + error.message); } else { setSaveMsg("Organização Atualizada!"); setTimeout(() => setSaveMsg(""), 3000); }
   };
 
-  useEffect(() => { if (user && !organization) { loadOrganization(); } }, [user]);
+  useEffect(() => {
+    if (!organization) return;
+    setData(prev => ({
+      ...prev,
+      empresaNome: organization.name || prev.empresaNome,
+      empresaCNPJ: organization.cnpj || prev.empresaCNPJ,
+      empresaEndereco: organization.endereco || prev.empresaEndereco,
+      empresaRazaoSocial: organization.razao_social || prev.empresaRazaoSocial,
+      corPrimaria: organization.cor_primaria || prev.corPrimaria,
+      corSecundaria: organization.cor_secundaria || prev.corSecundaria
+    }));
+  }, [organization]);
 
   const tabs = [
     { id: "organizacao", label: "🏢 Minha Empresa" },
@@ -635,6 +621,8 @@ export default function App() {
   if (screen === "list") return (
     <ProposalList
       user={user}
+      organizationId={organization?.id || null}
+      organizationLoading={organizationLoading}
       onNew={handleNew}
       onLoad={handleLoad}
       onBack={() => setScreen("hub")}
