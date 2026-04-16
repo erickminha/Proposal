@@ -5,6 +5,7 @@ import App from './App.jsx'
 import AcceptInvite from './AcceptInvite.jsx'
 import PublicApplication from './PublicApplication.jsx'
 import PublicHome from './PublicHome.jsx'
+import CandidatePage from './CandidatePage.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
