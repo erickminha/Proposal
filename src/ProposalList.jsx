@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabase";
 
-export default function ProposalList({ user, organizationId, organizationLoading, onNew, onLoad, onSignOut, corPrimaria }) {
+export default function ProposalList({ user, organizationId, organizationLoading, onNew, onLoad, onSignOut, corPrimaria, onBack, onOpenCandidates, onNewJobAd }) {
   const [activeView, setActiveView] = useState("propostas");
   const [propostas, setPropostas] = useState([]);
   const [filteredPropostas, setFilteredPropostas] = useState([]);

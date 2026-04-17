@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
 import JobAdBuilder from "./JobAdBuilder";
+import CandidateList from "./CandidateList";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 import { runOnboarding } from "./onboarding";
 import { useOrganizationContext } from "./useOrganizationContext";
@@ -606,6 +607,18 @@ export default function App() {
       setScreen("list");
       return;
     }
+    if (moduleId === "parecer-candidato") {
+      setScreen("candidates");
+      return;
+    }
+    if (moduleId === "gerador-anuncios") {
+      setScreen("jobAd");
+      return;
+    }
+    if (moduleId === "banco-curriculos") {
+      setScreen("candidates");
+      return;
+    }
     window.alert("Este módulo será disponibilizado em breve.");
   };
 
@@ -635,6 +648,17 @@ export default function App() {
 
   if (screen === "jobAd") {
     return <JobAdBuilder onBack={() => setScreen("list")} />;
+  }
+
+  if (screen === "candidates") {
+    return (
+      <CandidateList
+        user={user}
+        corPrimaria={data.corPrimaria}
+        onBackToProposals={() => setScreen("list")}
+        onSignOut={handleSignOut}
+      />
+    );
   }
 
   // ── EDITOR SCREEN ──

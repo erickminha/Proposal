@@ -7,8 +7,8 @@ const ROLE_LABELS = {
 const MODULES = [
   {
     id: "propostas",
-    title: "Propostas",
-    description: "Crie, edite e acompanhe propostas comerciais enviadas aos clientes.",
+    title: "Propostas de RH",
+    description: "Crie, edite e acompanhe propostas comerciais de recrutamento e seleção.",
     allowedRoles: ["owner", "admin", "recruiter"],
   },
   {
