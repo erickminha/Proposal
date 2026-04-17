@@ -5,6 +5,7 @@ import Auth from "./Auth";
 import ProposalList from "./ProposalList";
 import JobAdBuilder from "./JobAdBuilder";
 import CandidateList from "./CandidateList";
+import ModuleHub from "./ModuleHub";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
 import { runOnboarding } from "./onboarding";
 import { useOrganizationContext } from "./useOrganizationContext";
@@ -141,19 +142,11 @@ function FTextarea({ value, onChange, rows = 3 }) {
   );
 }
 
-// ─── APP SHELL ─────────────────────────────────────────────────────────────────
-function AppShell({ children, moduleName, breadcrumb, onBackToHub, topActions, userEmail }) {
-  // Simples container para evitar erro de referência.
-  return <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#f8fafc" }}>{children}</div>;
-}
-
-// ─── MODULE HUB ────────────────────────────────────────────────────────────────
-function ModuleHub({ user, role, onOpenModule, onSignOut }) {
+// ─── EDITOR SHELL (wrapper simples para o editor de propostas) ─────────────
+function EditorShell({ children }) {
   return (
-    <div style={{ padding: 40, textAlign: "center" }}>
-      <h2>Bem-vindo, {user?.email}</h2>
-      <button onClick={() => onOpenModule("propostas")} style={{ margin: 10, padding: "10px 20px", fontSize: 16 }}>📄 Propostas</button>
-      <button onClick={onSignOut} style={{ margin: 10, padding: "10px 20px", fontSize: 16 }}>🚪 Sair</button>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "#f8fafc" }}>
+      {children}
     </div>
   );
 }
@@ -344,7 +337,7 @@ function PreviewContent({ data, logoSrc, publicApplicationUrl, publicApplication
 export default function App() {
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [screen, setScreen] = useState("list");
+  const [screen, setScreen] = useState("hub"); // ← CORRIGIDO: era "list", pulava o Hub no reload
   const [data, setData] = useState({ ...defaultData });
   const [tab, setTab] = useState("empresa");
   const [mobileScreen, setMobileScreen] = useState("form");
@@ -354,7 +347,9 @@ export default function App() {
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [savedId, setSavedId] = useState(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
-  const [previewMode, setPreviewMode] = useState("completa"); // "completa" | "compacta"
+  const [previewMode, setPreviewMode] = useState("completa");
+  const [exportingImage, setExportingImage] = useState(false); // ← CORRIGIDO: estava faltando, causava ReferenceError
+  const [exportResolution, setExportResolution] = useState("web");
   const logoRef = useRef();
   const autoSaveTimerRef = useRef(null);
   const isMobile = useIsMobile();
@@ -372,9 +367,19 @@ export default function App() {
         });
       }
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user || null);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const nextUser = session?.user || null;
+      setUser(nextUser);
+      // ← CORRIGIDO: garante que ao renovar sessão o Hub seja mostrado
+      if (event === "SIGNED_IN" && nextUser) {
+        setScreen("hub");
+      }
+      if (event === "SIGNED_OUT") {
+        setScreen("hub");
+      }
     });
+
     return () => {
       subscription.unsubscribe();
       if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
@@ -567,9 +572,7 @@ export default function App() {
     if (exportingImage) return;
     setExportingImage(true);
     try {
-      // Placeholder: exibe alerta (substitua pela lógica com html2canvas se desejar)
       alert(`Exportando JPG ${format === "square" ? "1080x1080" : "1080x1920"}. Implemente com html2canvas conforme necessário.`);
-      // Atualiza o histórico de metadados (exemplo)
       setData(prev => ({
         ...prev,
         generatedArtMetadata: [
@@ -622,6 +625,7 @@ export default function App() {
     window.alert("Este módulo será disponibilizado em breve.");
   };
 
+  // ← CORRIGIDO: usa o ModuleHub importado de ModuleHub.jsx (completo, com todos os módulos)
   if (screen === "hub") return (
     <ModuleHub
       user={user}
@@ -781,7 +785,7 @@ export default function App() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {data.generatedArtMetadata.slice(0, 5).map((item) => (
-<div key={item.id || item.createdAt} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
+                  <div key={item.id || item.createdAt} style={{ background: "white", border: "1px solid #e2e8f0", borderRadius: 8, padding: "8px 10px", display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}>
                     <div style={{ fontSize: 12, color: "#334155", fontWeight: 600 }}>
                       {item.fileName || "arquivo.jpg"} • {item.width}x{item.height}
                     </div>
@@ -897,13 +901,7 @@ export default function App() {
   );
 
   return (
-    <AppShell
-      moduleName={data.clienteNome || "Nova Proposta"}
-      breadcrumb={["Hub", "Propostas", "Editor"]}
-      onBackToHub={() => setScreen("list")}
-      topActions={<></>}
-      userEmail={user?.email}
-    >
+    <EditorShell>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         @media print {
@@ -1089,7 +1087,8 @@ export default function App() {
           </button>
         </div>
       </div>
-{/* BODY */}
+
+      {/* BODY */}
       {isMobile ? (
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
           {mobileScreen === "form"
@@ -1107,6 +1106,6 @@ export default function App() {
           </div>
         </div>
       )}
-    </AppShell>
+    </EditorShell>
   );
 }
