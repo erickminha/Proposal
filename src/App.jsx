@@ -4,6 +4,8 @@ import { supabase } from "./supabase";
 import Auth from "./Auth";
 import ProposalList from "./ProposalList";
 import JobAdBuilder from "./JobAdBuilder";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import CandidateList from "./CandidateList";
 import ModuleHub from "./ModuleHub";
 import { acceptInviteForUser, clearPendingInviteToken, getPendingInviteToken } from "./inviteAcceptance";
