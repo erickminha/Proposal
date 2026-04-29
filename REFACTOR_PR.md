@@ -76,11 +76,10 @@ const { data, setField, saving, saveMsg } = useFormState(initialData, onSave);
 - `ProgressBar` - Barra de progresso
 
 ### 3. **Context Global** (`src/contexts/`)
-
 #### `AppContext.jsx`
-- Gerencia estado global (usuário, organização)
-- Métodos: `login`, `logout`, `addNotification`
-- Hook: `useApp()` para acessar contexto
+- Gerencia estado global (usuário, cliente/organização selecionada)
+- Métodos: `login`, `logout`, `addNotification`, `setSelectedClient`
+- Hook: `useApp()` para acessar contexto e dados do cliente atualo
 
 ### 4. **Service Layer** (`src/services/`)
 
