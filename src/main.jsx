@@ -5,7 +5,8 @@ import App from './App.jsx'
 import AcceptInvite from './AcceptInvite.jsx'
 import PublicHome from './PublicHome.jsx'
 import CandidatePage from './CandidatePage.jsx'
-import GlobalErrorBoundary from './GlobalErrorBoundary.jsx'
+import { AppProvider } from './contexts/AppContext'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 function RuntimeFallback({ message }) {
   return (
@@ -55,19 +56,21 @@ function RuntimeGuard({ children }) {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <GlobalErrorBoundary>
+    <ErrorBoundary>
       <RuntimeGuard>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<PublicHome />} />
-            <Route path="/portal" element={<App />} />
-            <Route path="/accept-invite" element={<AcceptInvite />} />
-            <Route path="/candidatura" element={<CandidatePage />} />
-            <Route path="/trabalhe-conosco" element={<Navigate to="/candidatura" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
+        <AppProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<PublicHome />} />
+              <Route path="/portal" element={<App />} />
+              <Route path="/accept-invite" element={<AcceptInvite />} />
+              <Route path="/candidatura" element={<CandidatePage />} />
+              <Route path="/trabalhe-conosco" element={<Navigate to="/candidatura" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </BrowserRouter>
+        </AppProvider>
       </RuntimeGuard>
-    </GlobalErrorBoundary>
+    </ErrorBoundary>
   </React.StrictMode>,
 )
